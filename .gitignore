@@ -1,24 +1,56 @@
-# Compiled class file
+# --------------------
+# Java
+# --------------------
 *.class
-
-# Log file
 *.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
-*.nar
 *.ear
+target/
+build/
+
+# --------------------
+# macOS
+# --------------------
+.DS_Store
+
+# --------------------
+# VS Code
+# --------------------
+.vscode/
+
+# --------------------
+# Environment / Secrets
+# --------------------
+.env
+.env.*
+*.key
+*.pem
+*.secret
+
+# --------------------
+# Terraform
+# --------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+crash.log
+
+# --------------------
+# Node / Frontend
+# --------------------
+node_modules/
+dist/
+
+# --------------------
+# Docker
+# --------------------
+.docker/
+
+# --------------------
+# Misc
+# --------------------
 *.zip
 *.tar.gz
 *.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
