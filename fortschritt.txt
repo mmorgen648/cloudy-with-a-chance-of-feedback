@@ -1,0 +1,91 @@
+PROJEKT: CloudyWithAChanceOfFeedback
+WOCHE 1 – Tag 1 bis Tag 3
+Region: eu-north-1 (Comprehend: eu-central-1)
+Stand: ML Integration lokal abgeschlossen
+
+------------------------------------------------------------
+TAG 1 – Projekt & GitHub Setup
+------------------------------------------------------------
+
+- GitHub Repository erstellt (public)
+- Repo-Name: cloudy-with-a-chance-of-feedback
+- Lokales Cloning durchgeführt
+- Ordnerstruktur angelegt:
+  - frontend/
+  - backend/
+  - terraform/
+  - k8s/
+  - .github/
+- .gitignore erstellt und erweitert
+- README.md angelegt
+- AWS Budget Alert eingerichtet
+- Erster Commit + Push durchgeführt
+
+Status: Abgeschlossen
+
+
+------------------------------------------------------------
+TAG 2 – Backend lokal starten
+------------------------------------------------------------
+
+- Spring Boot Projekt über Spring Initializr erstellt
+- Java 17 verwendet
+- Maven Projektstruktur
+- H2 In-Memory Datenbank konfiguriert
+- H2 Console aktiviert
+- Security lokal deaktiviert (Development Mode)
+- Erste Test-API erstellt (/api/test)
+- Feedback Entity erstellt
+- FeedbackRepository erstellt
+- FeedbackController erstellt
+- POST /api/feedback implementiert
+- GET /api/feedback implementiert
+- Speicherung in H2 erfolgreich getestet
+
+Status: Abgeschlossen
+
+
+------------------------------------------------------------
+TAG 3 – AWS ML lokal testen
+------------------------------------------------------------
+
+- AWS SSO Login erfolgreich eingerichtet
+- AWS SDK v2 integriert
+- SSO + SSOOIDC Module eingebunden
+- Region-Problem erkannt:
+  - Comprehend nicht verfügbar in eu-north-1
+  - Lösung: Comprehend in eu-central-1 gesetzt
+- ComprehendService implementiert
+- FeedbackService implementiert
+- Sentiment-Analyse integriert
+- Keyword-Extraction integriert
+- 15 Testfeedback-Texte angelegt (POSITIVE / NEGATIVE / MIXED / NEUTRAL)
+- ML Responses erfolgreich validiert
+- Confidence Scores als echtes JSON formatiert
+- Locale-Problem (Komma statt Punkt) gelöst mit Locale.US
+- KeyPhrases als JSON Array gespeichert
+
+Ergebnis:
+- Sentiment wird korrekt erkannt
+- Confidence wird korrekt als JSON gespeichert
+- KeyPhrases werden korrekt extrahiert
+- Backend vollständig ML-fähig
+
+Status: Abgeschlossen
+
+
+------------------------------------------------------------
+AKTUELLER PROJEKTSTATUS
+------------------------------------------------------------
+
+✔ Backend läuft lokal stabil
+✔ ML-Service vollständig integriert
+✔ Daten werden korrekt analysiert und gespeichert
+✔ Architektur sauber (Controller → Service → AWS → DB)
+✔ Projekt bereit für Infrastruktur-Phase
+
+Offen in Woche 1:
+- Tag 4 – Terraform Netzwerk
+- Tag 5 – Cognito vorbereiten
+
+------------------------------------------------------------
