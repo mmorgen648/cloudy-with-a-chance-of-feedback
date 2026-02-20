@@ -113,6 +113,50 @@ Ergebnis:
 
 Status: Abgeschlossen
 
+------------------------------------------------------------
+TAG 5 – Terraform Network Layer
+------------------------------------------------------------
+
+- Network Modul erstellt:
+  - terraform/modules/network/
+  - main.tf
+  - variables.tf
+  - outputs.tf
+
+- Root Terraform Struktur aufgebaut:
+  - backend.tf (S3 + DynamoDB Remote State)
+  - providers.tf (AWS Provider eu-central-1)
+  - main.tf (Network Modul eingebunden)
+
+- VPC erstellt:
+  - CIDR: 10.0.0.0/16
+  - Name: cloudy-feedback-vpc
+
+- 2 Public Subnets erstellt:
+  - eu-central-1a (10.0.1.0/24)
+  - eu-central-1b (10.0.2.0/24)
+
+- 2 Private Subnets erstellt:
+  - eu-central-1a (10.0.101.0/24)
+  - eu-central-1b (10.0.102.0/24)
+
+- Internet Gateway erstellt und angebunden
+- Public Route Table erstellt
+- 0.0.0.0/0 Route auf IGW gesetzt
+- Route Table Associations konfiguriert
+
+- KEIN NAT Gateway verwendet (Projektregel v2)
+- Remote State korrekt genutzt (network/terraform.tfstate)
+- Terraform apply erfolgreich ausgeführt
+- Commit + Push durchgeführt
+
+Ergebnis:
+- Netzwerkbasis für EKS und RDS steht
+- Multi-AZ vorbereitet
+- Infrastruktur Enterprise-konform modularisiert
+
+Status: Abgeschlossen
+
 
 ------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
@@ -128,12 +172,12 @@ AKTUELLER PROJEKTSTATUS
 ✔ DynamoDB Locking aktiv
 ✔ Enterprise-konforme Terraform-Struktur aufgebaut
 
+✔ Network Layer (VPC, Subnets, Routing) vollständig implementiert
+
 Projektphase:
-Infrastruktur-Phase gestartet
+Infrastruktur-Phase – Woche 1
 
 Offen in Woche 1:
-- Tag 5 – Terraform Network Layer (VPC, Subnets, Routing, Security Groups)
 - Cognito vorbereiten
-
-------------------------------------------------------------
+- EKS Basis planen
 
