@@ -1,7 +1,5 @@
 PROJEKT: CloudyWithAChanceOfFeedback
-WOCHE 1 – Tag 1 bis Tag 3
 Region: eu-north-1 (Comprehend: eu-central-1)
-Stand: ML Integration lokal abgeschlossen
 
 ------------------------------------------------------------
 TAG 1 – Projekt & GitHub Setup
