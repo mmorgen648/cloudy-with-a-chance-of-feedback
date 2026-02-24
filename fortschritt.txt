@@ -185,6 +185,32 @@ Status: Abgeschlossen
 
 
 ------------------------------------------------------------
+TAG 6 – Dockerisierung + ECR Integration
+------------------------------------------------------------
+
+- Dockerfile (Multi-Stage Build, Temurin 21) erstellt
+- .dockerignore sauber konfiguriert
+- Backend erfolgreich containerisiert
+- Container lokal getestet (Port 8080, H2, Security 401 geprüft)
+- Git-Commit-SHA als Docker-Tag etabliert (kein :latest)
+- Zusammenhang Git SHA ↔ Docker Tag ↔ ECR ↔ Rollback vollständig verstanden
+- Aktuellen Commit-SHA aus Git ausgelesen
+- Docker Image mit Commit-SHA versioniert
+- ECR Repository (eu-central-1) erstellt
+- Docker Login zu ECR durchgeführt
+- Versioniertes Image erfolgreich nach ECR gepusht
+- Image in AWS Console validiert
+
+Ergebnis:
+- Versionierte Docker-Images bilden reproduzierbare Deployments
+- Rollback-Fähigkeit durch gespeicherte Images gegeben
+- Basis für EKS Deployment vorbereitet
+- Woche 2 technisch sauber gestartet
+
+Status: Abgeschlossen
+
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -202,9 +228,13 @@ AKTUELLER PROJEKTSTATUS
 ✔ Cognito OAuth Flow vollständig validiert
 ✔ JWT Validation + Rollenprüfung produktionsreif
 
+✔ Backend erfolgreich containerisiert
+✔ SHA-basierte Docker-Versionierung etabliert (kein :latest)
+✔ ECR angebunden und versioniertes Image gespeichert
+✔ Grundlage für reproduzierbare Deployments & Rollbacks geschaffen
+
 Projektphase:
-Woche 1 vollständig abgeschlossen
+Woche 2 – Dockerisierung + ECR abgeschlossen
 
 Nächste Phase:
-Woche 2 – Dockerisierung + EKS Vorbereitung
-
+EKS Deployment mit versioniertem Image
