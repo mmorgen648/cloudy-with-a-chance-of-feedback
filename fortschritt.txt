@@ -200,6 +200,7 @@ TAG 6 – Dockerisierung + ECR Integration
 - Docker Login zu ECR durchgeführt
 - Versioniertes Image erfolgreich nach ECR gepusht
 - Image in AWS Console validiert
+- Commit-Format vereinheitlicht (ab Tag 6: "Tag X: Beschreibung")
 
 Ergebnis:
 - Versionierte Docker-Images bilden reproduzierbare Deployments
