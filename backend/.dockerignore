@@ -1,0 +1,24 @@
+# Build output
+target
+build
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.iml
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Env / Secrets
+.env
+*.pem
+*.key
+terraform.tfvars
