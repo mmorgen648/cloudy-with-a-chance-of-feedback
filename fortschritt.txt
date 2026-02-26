@@ -210,6 +210,48 @@ Ergebnis:
 
 Status: Abgeschlossen
 
+------------------------------------------------------------
+TAG 7 – EKS Cluster + ALB Controller
+------------------------------------------------------------
+
+- ECR Lifecycle Policy erstellt (Kostenkontrolle / Image Cleanup)
+- EKS Modul-Struktur refactored:
+  - modules/vpc/
+  - modules/eks/
+  - modules/security-groups/
+- Security Group Modul ausgelagert (Projektvorgabe Struktur eingehalten)
+- Terraform State bewusst neu aufgebaut (Modul-Umbenennung)
+
+- EKS Cluster erstellt (eu-central-1)
+- Managed Node Group konfiguriert:
+  - desired=1
+  - min=0
+  - max=4
+  - Public Subnets (laut Projektvorgabe)
+
+- kubeconfig erfolgreich aktualisiert
+- kubectl Verbindung zum Cluster validiert
+- Node Status "Ready" erfolgreich geprüft
+
+- OIDC Provider für EKS in IAM registriert
+- IAM Policy für AWS Load Balancer Controller erstellt
+- IAM Role for Service Account (IRSA) eingerichtet
+- Helm installiert
+- AWS Load Balancer Controller deployed
+- Controller Pods im kube-system Namespace Running
+
+- Node Group auf desired=0 skaliert (Kostenkontrolle)
+- EC2 Instanz vollständig terminiert
+- kubectl get nodes → No resources found
+
+Ergebnis:
+- Voll funktionsfähiger EKS Cluster
+- Infrastruktur modular und projektkonform
+- ALB Ingress vorbereitet
+- Kostenkontrolle korrekt umgesetzt
+- Woche 2 – Tag 3 vollständig abgeschlossen
+
+Status: Abgeschlossen
 
 ------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
@@ -225,17 +267,23 @@ AKTUELLER PROJEKTSTATUS
 ✔ DynamoDB Locking aktiv
 ✔ Enterprise-konforme Terraform-Struktur aufgebaut
 
-✔ Network Layer (VPC, Subnets, Routing) vollständig implementiert
+✔ Network Layer vollständig implementiert
 ✔ Cognito OAuth Flow vollständig validiert
 ✔ JWT Validation + Rollenprüfung produktionsreif
 
 ✔ Backend erfolgreich containerisiert
 ✔ SHA-basierte Docker-Versionierung etabliert (kein :latest)
 ✔ ECR angebunden und versioniertes Image gespeichert
-✔ Grundlage für reproduzierbare Deployments & Rollbacks geschaffen
+✔ ECR Lifecycle Policy aktiv (Image Cleanup)
+
+✔ EKS Cluster produktionsbereit erstellt
+✔ Managed Node Group konfiguriert (min=0 / max=4)
+✔ OIDC Provider + IRSA korrekt eingerichtet
+✔ AWS Load Balancer Controller installiert
+✔ Nodes sauber auf 0 skaliert (Kostenkontrolle aktiv)
 
 Projektphase:
-Woche 2 – Dockerisierung + ECR abgeschlossen
+Woche 2 – EKS Infrastruktur abgeschlossen
 
 Nächste Phase:
-EKS Deployment mit versioniertem Image
+Kubernetes Deployments (Frontend + Backend + Ingress + HPA + Limits + Probes)
