@@ -23,3 +23,22 @@ module "network" {
 
   region = "eu-central-1"
 }
+
+# ============================================================
+# EKS Modul (Woche 2)
+# ============================================================
+
+module "eks" {
+  source = "./modules/eks"
+
+  # Eindeutiger Cluster-Name
+  cluster_name = "cloudy-eks"
+
+  # Wir nutzen die PRIVATE Subnets für Worker Nodes
+  private_subnet_ids = module.network.private_subnet_ids
+
+  # VPC Referenz (für Security Groups etc.)
+  vpc_id = module.network.vpc_id
+
+  region = "eu-central-1"
+}
