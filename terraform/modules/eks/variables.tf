@@ -15,14 +15,20 @@ variable "vpc_id" {
   type        = string
 }
 
-# Private Subnet IDs für Worker Nodes
-variable "private_subnet_ids" {
-  description = "List of private subnet IDs for worker nodes"
+# Public Subnet IDs für Worker Nodes
+variable "public_subnet_ids" {
+  description = "List of public subnet IDs for worker nodes"
   type        = list(string)
 }
 
 # AWS Region
 variable "region" {
   description = "AWS region"
+  type        = string
+}
+
+# Security Group ID für den EKS Control Plane (kommt aus modules/security-groups)
+variable "cluster_security_group_id" {
+  description = "Security group ID attached to the EKS control plane"
   type        = string
 }

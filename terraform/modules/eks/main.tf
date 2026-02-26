@@ -37,16 +37,6 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
 }
 
 # ------------------------------------------------------------
-# Security Group für den EKS Cluster (Control Plane)
-# (Minimal: nur als Basis, Regeln ergänzen wir später gezielt)
-# ------------------------------------------------------------
-resource "aws_security_group" "eks_cluster_sg" {
-  name        = "${var.cluster_name}-cluster-sg"
-  description = "Security Group for EKS control plane"
-  vpc_id      = var.vpc_id
-}
-
-# ------------------------------------------------------------
 # EKS Cluster (Control Plane)
 # Wichtig für "kein NAT":
 # - endpoint_public_access = true
@@ -58,14 +48,14 @@ resource "aws_eks_cluster" "this" {
 
   vpc_config {
     # Control Plane wird in Subnets platziert (mind. 2 AZs)
-    subnet_ids = var.private_subnet_ids
+    subnet_ids = var.public_subnet_ids
 
     # API Endpoint öffentlich erreichbar (ohne NAT-Requirement für Basic-Setup)
-    endpoint_public_access = true
+    endpoint_public_access  = true
     endpoint_private_access = false
 
-    # Zusätzliche SG (unser Cluster-SG)
-    security_group_ids = [aws_security_group.eks_cluster_sg.id]
+    # Zusätzliche SG 
+    security_group_ids = [var.cluster_security_group_id]
   }
 
   # Stellt sicher, dass Policies wirklich dran sind, bevor EKS erstellt wird

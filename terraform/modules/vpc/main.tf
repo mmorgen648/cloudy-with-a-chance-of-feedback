@@ -11,7 +11,7 @@ resource "aws_vpc" "this" {
   cidr_block = var.vpc_cidr
 
   tags = {
-    Name = "cloudy-feedback-vpc"
+    Name    = "cloudy-feedback-vpc"
     Project = "CloudyWithAChanceOfFeedback"
   }
 }
@@ -28,7 +28,7 @@ resource "aws_subnet" "public" {
   availability_zone       = "${var.region}${count.index == 0 ? "a" : "b"}"
 
   tags = {
-    Name = "cloudy-public-subnet-${count.index}"
+    Name    = "cloudy-public-subnet-${count.index}"
     Project = "CloudyWithAChanceOfFeedback"
   }
 }
@@ -45,7 +45,7 @@ resource "aws_subnet" "private" {
   availability_zone       = "${var.region}${count.index == 0 ? "a" : "b"}"
 
   tags = {
-    Name = "cloudy-private-subnet-${count.index}"
+    Name    = "cloudy-private-subnet-${count.index}"
     Project = "CloudyWithAChanceOfFeedback"
   }
 }
@@ -58,7 +58,7 @@ resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
 
   tags = {
-    Name = "cloudy-igw"
+    Name    = "cloudy-igw"
     Project = "CloudyWithAChanceOfFeedback"
   }
 }
@@ -70,7 +70,7 @@ resource "aws_route_table" "public" {
   vpc_id = aws_vpc.this.id
 
   tags = {
-    Name = "cloudy-public-rt"
+    Name    = "cloudy-public-rt"
     Project = "CloudyWithAChanceOfFeedback"
   }
 }
