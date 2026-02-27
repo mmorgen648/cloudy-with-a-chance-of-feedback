@@ -254,6 +254,57 @@ Ergebnis:
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 8 – RDS PostgreSQL (Terraform, Private Subnets)
+------------------------------------------------------------
+
+- RDS Modul erstellt:
+  - terraform/modules/rds/
+  - main.tf
+  - variables.tf
+  - outputs.tf
+
+- DB Subnet Group implementiert (Private Subnets only)
+- RDS PostgreSQL erstellt:
+  - Engine: PostgreSQL 15
+  - Instance: db.t3.micro (Projektvorgabe)
+  - publicly_accessible = false
+  - multi_az = false (kein Overengineering)
+
+- Eigene RDS Security Group erstellt
+- Ingress-Regel implementiert:
+  - Nur EKS → RDS Port 5432
+  - Kein 0.0.0.0/0 Zugriff
+
+- Root Outputs ergänzt:
+  - rds_endpoint
+  - rds_port
+  - rds_db_name
+
+- Snapshot-Strategie verbessert:
+  - skip_final_snapshot = false
+  - random_id.snapshot_suffix eingeführt
+  - final_snapshot_identifier mit stabilem Zufalls-Suffix
+  - Begründung:
+    - Verhindert Namenskollisionen
+    - Vermeidet timestamp()-Plan-Drift
+    - Stabiler Wert im Terraform State
+
+- terraform fmt ausgeführt
+- terraform validate erfolgreich
+- terraform plan geprüft (5 Ressourcen)
+- terraform apply erfolgreich durchgeführt
+- RDS Endpoint erfolgreich validiert
+
+Ergebnis:
+- PostgreSQL läuft in Private Subnets
+- Sicherheitsregeln minimal und korrekt
+- Snapshot-Strategie kollisionsfrei und stabil
+- Infrastruktur REQUIREMENTS-konform
+- RDS Instanz am Tagesende gestoppt (Kostenkontrolle)
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -282,8 +333,13 @@ AKTUELLER PROJEKTSTATUS
 ✔ AWS Load Balancer Controller installiert
 ✔ Nodes sauber auf 0 skaliert (Kostenkontrolle aktiv)
 
+✔ RDS PostgreSQL in Private Subnets implementiert
+✔ Snapshot-Strategie mit stabilem Random-Suffix umgesetzt
+✔ Infrastruktur vollständig datenbankfähig
+
 Projektphase:
-Woche 2 – EKS Infrastruktur abgeschlossen
+Woche 2 – Infrastruktur abgeschlossen (EKS + RDS)
 
 Nächste Phase:
-Kubernetes Deployments (Frontend + Backend + Ingress + HPA + Limits + Probes)
+Backend ↔ RDS Verbindung (Profile + ENV)
+Woche 2 – Tag 5: Unit Tests

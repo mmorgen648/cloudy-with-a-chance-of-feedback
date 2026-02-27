@@ -4,6 +4,16 @@
 # ============================================================
 
 # ------------------------------------------------------------
+# Root Variable: DB Password
+# Wird nicht ins Git committed (kommt aus terraform.tfvars)
+# ------------------------------------------------------------
+variable "db_password" {
+  description = "Master password for RDS PostgreSQL"
+  type        = string
+  sensitive   = true
+}
+
+# ------------------------------------------------------------
 # VPC Modul (Pflicht-Struktur: modules/vpc)
 # Erstellt: VPC, Public/Private Subnets, IGW, Routing
 # ------------------------------------------------------------
@@ -65,4 +75,42 @@ module "eks" {
 
   # Projekt-Region
   region = "eu-central-1"
+}
+
+# ------------------------------------------------------------
+# RDS Modul
+# Erstellt PostgreSQL (db.t3.micro) in Private Subnets
+# REQUIREMENTS.md konform
+# ------------------------------------------------------------
+module "rds" {
+  source = "./modules/rds"
+
+  # Datenbankname
+  db_name = "cloudydb"
+
+  # Master User (Passwort kommt später aus tfvars!)
+  db_username = "cloudyadmin"
+  db_password = var.db_password
+
+  # Netzwerk
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+
+  # Security Group aus SG Modul
+  rds_security_group_id = module.security_groups.rds_sg_id
+}
+
+# ------------------------------------------------------------
+# RDS Outputs (Weiterleitung aus Modul)
+# ------------------------------------------------------------
+output "rds_endpoint" {
+  value = module.rds.db_endpoint
+}
+
+output "rds_port" {
+  value = module.rds.db_port
+}
+
+output "rds_db_name" {
+  value = module.rds.db_name
 }
