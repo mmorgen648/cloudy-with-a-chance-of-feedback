@@ -29,6 +29,10 @@ public class ComprehendService {
                 .build();
     }
 
+    public ComprehendService(ComprehendClient comprehendClient) {
+        this.comprehendClient = comprehendClient;
+    }
+
     /**
      * Analysiert Sentiment eines Textes
      */

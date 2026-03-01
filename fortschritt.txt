@@ -305,6 +305,26 @@ Ergebnis:
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 9 – Unit Tests + Infrastruktur-Kostenkontrolle
+------------------------------------------------------------
+
+- FeedbackService Unit Tests erweitert
+- ComprehendService Unit Tests implementiert
+- Alle Tests erfolgreich ausgeführt (BUILD SUCCESS)
+
+- Globaler Cost Audit durchgeführt
+- EKS Cluster (module.eks) gezielt zerstört
+- Keine ALBs, NAT Gateways oder Orphaned Volumes vorhanden
+- RDS bleibt gestoppt (kein Snapshot erforderlich)
+
+Ergebnis:
+- Woche 2 fachlich vollständig abgeschlossen
+- Infrastruktur kosten-sicher
+- Projekt REQUIREMENTS-konform
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -331,15 +351,36 @@ AKTUELLER PROJEKTSTATUS
 ✔ Managed Node Group konfiguriert (min=0 / max=4)
 ✔ OIDC Provider + IRSA korrekt eingerichtet
 ✔ AWS Load Balancer Controller installiert
-✔ Nodes sauber auf 0 skaliert (Kostenkontrolle aktiv)
+✔ EKS Cluster bewusst zerstört (Kostenkontrolle aktiv)
 
 ✔ RDS PostgreSQL in Private Subnets implementiert
 ✔ Snapshot-Strategie mit stabilem Random-Suffix umgesetzt
 ✔ Infrastruktur vollständig datenbankfähig
 
+✔ Unit Tests (FeedbackService + ComprehendService) erfolgreich
+
 Projektphase:
-Woche 2 – Infrastruktur abgeschlossen (EKS + RDS)
+Woche 2 – Infrastruktur + Tests abgeschlossen
 
 Nächste Phase:
 Backend ↔ RDS Verbindung (Profile + ENV)
-Woche 2 – Tag 5: Unit Tests
+Frontend Grundstruktur
+
+========================================
+DOKU-MERKLISTE (für Woche 4)
+========================================
+- AWS Profil: cloudy
+- AWS Region: eu-central-1
+- AWS Account-ID: 038217523163
+- Architekturentscheidung: EKS (nicht EC2)
+- Snapshot-Strategie: random_id statt timestamp()
+- EKS Control Plane wird bei Inaktivität zerstört (Kostenregel)
+
+========================================
+DESTROY-LOG
+========================================
+2026-03-01
+- Zerstörte Module: module.eks
+- Grund: Kostenkontrolle gemäß REQUIREMENTS.md
+- RDS Snapshot: nicht erforderlich (RDS gestoppt)
+----------------------------------------
