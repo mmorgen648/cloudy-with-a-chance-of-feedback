@@ -325,6 +325,25 @@ Ergebnis:
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 10 – Prod-Profil Vorbereitung + Kostenkontrolle
+------------------------------------------------------------
+
+- PostgreSQL Dependency (org.postgresql:postgresql) ergänzt
+- application-prod.properties erstellt
+- Prod-Profil für RDS-Anbindung vorbereitet
+- Testlauf zur direkten RDS-Verbindung gestartet
+- Test bewusst abgebrochen (EKS-Test erfolgt später strukturiert)
+- EKS (module.eks) erneut via Terraform zerstört
+- RDS gestoppt (keine produktiven Daten vorhanden)
+
+Ergebnis:
+- Prod-Profil technisch vorbereitet
+- Infrastruktur wieder vollständig kostenneutral
+- REQUIREMENTS-konforme Kostenkontrolle umgesetzt
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -356,6 +375,7 @@ AKTUELLER PROJEKTSTATUS
 ✔ RDS PostgreSQL in Private Subnets implementiert
 ✔ Snapshot-Strategie mit stabilem Random-Suffix umgesetzt
 ✔ Infrastruktur vollständig datenbankfähig
+✔ RDS aktuell gestoppt (Kostenkontrolle aktiv)
 
 ✔ Unit Tests (FeedbackService + ComprehendService) erfolgreich
 
@@ -383,4 +403,9 @@ DESTROY-LOG
 - Zerstörte Module: module.eks
 - Grund: Kostenkontrolle gemäß REQUIREMENTS.md
 - RDS Snapshot: nicht erforderlich (RDS gestoppt)
+----------------------------------------
+2026-03-02
+- Zerstörte Module: module.eks
+- Grund: Testlauf abgebrochen – Kostenkontrolle gemäß REQUIREMENTS.md
+- RDS Snapshot: nicht erforderlich (keine produktiven Daten)
 ----------------------------------------
