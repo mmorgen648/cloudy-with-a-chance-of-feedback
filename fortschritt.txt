@@ -395,6 +395,10 @@ DOKU-MERKLISTE (für Woche 4)
 - Architekturentscheidung: EKS (nicht EC2)
 - Snapshot-Strategie: random_id statt timestamp()
 - EKS Control Plane wird bei Inaktivität zerstört (Kostenregel)
+- EKS Instance Type: t3.small (Dozentenvorgabe – nicht ändern)
+- Genau 1 Node wenn aktiv
+- Keine Replica-Skalierung (replicas = 1)
+- Kein HA / keine zusätzlichen Node Groups
 
 ========================================
 DESTROY-LOG

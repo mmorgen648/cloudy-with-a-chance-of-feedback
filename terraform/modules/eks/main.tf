@@ -116,6 +116,20 @@ resource "aws_iam_role_policy_attachment" "node_cni_policy" {
 # Erstellt die Worker Nodes (EC2 Instanzen)
 # ============================================================
 
+# --------------------------------------------------
+# DOZENTENVORGABE (VERBINDLICH)
+# --------------------------------------------------
+# - Instance Type: t3.small
+# - Genau 1 Node wenn aktiv
+# - Keine High Availability
+# - Keine zusätzlichen Node Groups
+# - Keine Replica-Erhöhung ohne ausdrückliche Freigabe
+#
+# Kostenregel bleibt bestehen:
+# - Bei Pause: desired_size = 0
+# - Bei längerer Inaktivität: terraform destroy module.eks
+# --------------------------------------------------
+
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "${var.cluster_name}-node-group"
