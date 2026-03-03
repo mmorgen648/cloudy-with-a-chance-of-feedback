@@ -1,0 +1,151 @@
+/* ========================================
+   BASE
+======================================== */
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* ========================================
+   HEADER
+======================================== */
+
+.header {
+  border-bottom: 1px solid #1e293b;
+  padding: 12px 40px; /* ← HIER reduzierst du Höhe */
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* LOGO */
+.logo {
+  height: 110px; /* ← HIER änderst du die Logo-Größe */
+  width: auto;
+  display: block;
+}
+
+/* TITLE */
+.header-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #a78bfa; /* weicher Purple Accent */
+  text-align: center;
+  flex: 1;
+}
+
+/* NAV BUTTON */
+.nav-button {
+  padding: 8px 16px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.nav-button:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* ========================================
+   MAIN
+======================================== */
+
+.main {
+  padding: 60px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ========================================
+   CARD
+======================================== */
+
+.card {
+  background: linear-gradient(180deg, #1e293b 0%, #182334 100%);
+  padding: 40px;
+  border-radius: 16px;
+  border: 1px solid #334155;
+  text-align: center;
+}
+
+/* ========================================
+   FORM
+======================================== */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+textarea {
+  padding: 14px;
+  background: #0b1220;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #e2e8f0;
+  resize: vertical;
+}
+
+/* ========================================
+   BUTTON
+======================================== */
+
+.primary-button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: #7c3aed;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  width: fit-content; /* ← nur so breit wie Inhalt */
+  align-self: center; /* ← zentriert nur den Button */
+}
+
+.primary-button:hover {
+  background: #6d28d9;
+}
+
+/* ========================================
+   ADMIN GRID
+======================================== */
+
+.stats-grid {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.stat-box {
+  background: #0b1220;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+}
+
+.stat-box span {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.stat-box strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 22px;
+}

@@ -344,6 +344,34 @@ Ergebnis:
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 11 – Frontend Grundstruktur + Design-System
+------------------------------------------------------------
+
+- frontend/ Ordner initialisiert
+- index.html erstellt (Public UI)
+- admin.html erstellt (Admin Placeholder UI)
+- style.css erstellt (zentrale Styles)
+- assets/ Ordner angelegt
+- logo-clean.png integriert
+- Contained Header-Layout für Public & Admin implementiert
+- Logo final gewählt (Variante B – SaaS-Style)
+- Logo technisch tight gecroppt und integriert
+- Header-Spacing mehrfach optimiert
+- Button-Stretch-Problem (Flexbox) analysiert und sauber gelöst
+- Public Feedback UI visuell finalisiert
+- Admin Dashboard UI strukturell vorbereitet
+- Einheitliches Farbkonzept (Purple + Emerald) definiert
+- DESIGN-SYSTEM.md erstellt und verbindlich festgelegt
+
+Ergebnis:
+- Frontend-Grundstruktur vollständig versionierbar
+- UI strukturell stabil und konsistent
+- Design-Richtung verbindlich dokumentiert
+- Vorbereitung für Cognito-Integration abgeschlossen
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -380,11 +408,10 @@ AKTUELLER PROJEKTSTATUS
 ✔ Unit Tests (FeedbackService + ComprehendService) erfolgreich
 
 Projektphase:
-Woche 2 – Infrastruktur + Tests abgeschlossen
+Woche 3 – Frontend
 
 Nächste Phase:
-Backend ↔ RDS Verbindung (Profile + ENV)
-Frontend Grundstruktur
+Tag 12 – Cognito Login UI + Admin-Schutz
 
 ========================================
 DOKU-MERKLISTE (für Woche 4)
