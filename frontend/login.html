@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cloudy With A Chance Of Feedback</title>
+    <title>Admin Login – Cloudy</title>
 
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
@@ -18,24 +18,24 @@
         <img src="assets/logo-clean.png" alt="Cloudy Logo" class="logo" />
 
         <div class="header-title">Cloudy With A Chance Of Feedback</div>
-
-        <a href="login.html" class="nav-button">Admin Login</a>
       </div>
     </header>
 
     <main class="main">
       <section class="card">
-        <h2>Feedback abgeben</h2>
+        <h2>Admin Login</h2>
 
-        <form class="form">
-          <label for="feedback">Dein Feedback</label>
-          <textarea id="feedback" rows="5"></textarea>
+        <p>
+          Für den Zugriff auf das Admin-Dashboard musst du dich über Cognito
+          anmelden.
+        </p>
 
-          <button type="submit" class="primary-button">
-            Feedback absenden
-          </button>
-        </form>
+        <button id="loginButton" class="primary-button">
+          Login mit Cognito
+        </button>
       </section>
     </main>
+
+    <script src="login.js"></script>
   </body>
 </html>

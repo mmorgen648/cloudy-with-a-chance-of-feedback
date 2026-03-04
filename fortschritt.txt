@@ -372,6 +372,34 @@ Ergebnis:
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 12 – Cognito Login UI (Integration begonnen)
+------------------------------------------------------------
+
+- login.html erstellt (Admin Login Page)
+- login.js implementiert
+- Cognito Hosted Login erfolgreich aufgerufen
+- Authorization Code Flow mit Testuser validiert
+- OAuth Token Exchange erfolgreich getestet (curl)
+- access_token / id_token / refresh_token erhalten
+
+- Redirect-Problem mit Live Server analysiert
+- Unterschied localhost vs 127.0.0.1 identifiziert
+- Redirect URI Strategie für Dev/Prod definiert
+
+Offene Punkte:
+- Cognito Redirect mit Live Server final stabilisieren
+- Token im Browser speichern
+- Admin-Seite via Token schützen
+- Cognito Logout implementieren
+
+Ergebnis:
+- Cognito Login grundsätzlich funktionsfähig
+- Frontend Integration begonnen
+- Admin Auth-Flow strukturell vorbereitet
+
+Status: In Arbeit
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -407,11 +435,51 @@ AKTUELLER PROJEKTSTATUS
 
 ✔ Unit Tests (FeedbackService + ComprehendService) erfolgreich
 
+✔ Frontend Grundstruktur implementiert (Public UI + Admin UI)
+✔ Design-System definiert und dokumentiert
+✔ Cognito Login Integration im Frontend begonnen
+✔ Hosted Cognito Login erreichbar
+✔ OAuth Authorization Code Flow erfolgreich validiert
+✔ Token Exchange erfolgreich getestet (curl)
+
 Projektphase:
 Woche 3 – Frontend
 
 Nächste Phase:
-Tag 12 – Cognito Login UI + Admin-Schutz
+Tag 13 – Cognito Login finalisieren + Admin-Seite schützen
+
+------------------------------------------------------------
+OPEN TECH TASKS
+------------------------------------------------------------
+
+Auth / Frontend:
+
+- Token im Browser speichern (Session Handling nach Cognito Login)
+- Admin-Seite schützen (Token-Prüfung vor Zugriff auf admin.html)
+
+- Sauberes Cognito Logout implementieren:
+  1 Token aus Browser löschen (localStorage)
+  2 Cognito Logout Endpoint aufrufen
+  3 Redirect zurück zur Startseite
+
+Cognito Redirect Hinweis:
+
+Aktuell verwendet login.js automatisch:
+
+window.location.origin + "/login.html"
+
+Damit funktioniert der Login sowohl lokal als auch später in Produktion.
+
+Lokale Umgebung:
+http://localhost:5500/login.html
+
+Beim späteren Frontend Deployment (S3 + CloudFront) muss zusätzlich in Cognito erlaubt werden:
+
+https://<cloudfront-domain>/login.html
+
+Diese URL muss in Cognito unter
+App Client → Managed login pages configuration → Allowed callback URLs
+eingetragen werden.
 
 ========================================
 DOKU-MERKLISTE (für Woche 4)
