@@ -385,6 +385,9 @@ TAG 12 – Cognito Login UI (Integration begonnen)
 - Redirect-Problem mit Live Server analysiert
 - Unterschied localhost vs 127.0.0.1 identifiziert
 - Redirect URI Strategie für Dev/Prod definiert
+- Lokale Entwicklungsumgebung angepasst (Python HTTP Server statt Live Server)
+- Cognito Callback URL für localhost:8000 konfiguriert
+- Cognito Login + Redirect erfolgreich getestet
 
 Offene Punkte:
 - Cognito Redirect mit Live Server final stabilisieren
@@ -397,7 +400,7 @@ Ergebnis:
 - Frontend Integration begonnen
 - Admin Auth-Flow strukturell vorbereitet
 
-Status: In Arbeit
+Status: Teilweise abgeschlossen
 
 ------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
@@ -437,49 +440,60 @@ AKTUELLER PROJEKTSTATUS
 
 ✔ Frontend Grundstruktur implementiert (Public UI + Admin UI)
 ✔ Design-System definiert und dokumentiert
-✔ Cognito Login Integration im Frontend begonnen
-✔ Hosted Cognito Login erreichbar
-✔ OAuth Authorization Code Flow erfolgreich validiert
+✔ login.html + login.js implementiert
+✔ Cognito Hosted Login erfolgreich integriert
+✔ OAuth Authorization Code Redirect funktioniert
 ✔ Token Exchange erfolgreich getestet (curl)
+✔ Token Handling im Browser implementiert (sessionStorage)
+✔ Admin-Seite geschützt (Token-Check vor Zugriff auf admin.html)
+✔ Logout implementiert (Session löschen + Cognito Logout + Redirect)
+✔ Cognito Sign-out URL konfiguriert:
+  http://localhost:8080/index.html
+✔ Frontend Dockerfile implementiert (nginx)
+✔ Frontend Container erfolgreich gebaut und getestet (Docker)
+✔ Frontend läuft über nginx Container:
+  http://localhost:8080
 
 Projektphase:
 Woche 3 – Frontend
 
 Nächste Phase:
-Tag 13 – Cognito Login finalisieren + Admin-Seite schützen
+Tag 14 – Kubernetes Manifeste
 
 ------------------------------------------------------------
 OPEN TECH TASKS
 ------------------------------------------------------------
 
-Auth / Frontend:
+Frontend / Backend Integration:
 
-- Token im Browser speichern (Session Handling nach Cognito Login)
-- Admin-Seite schützen (Token-Prüfung vor Zugriff auf admin.html)
+- Feedback Formular mit Backend API verbinden
+  POST /api/feedback
 
-- Sauberes Cognito Logout implementieren:
-  1 Token aus Browser löschen (localStorage)
-  2 Cognito Logout Endpoint aufrufen
-  3 Redirect zurück zur Startseite
+Kubernetes Deployment:
 
-Cognito Redirect Hinweis:
+- Kubernetes Manifeste erstellen:
+  frontend-deployment.yaml
+  frontend-service.yaml
+  backend-deployment.yaml
+  backend-service.yaml
 
-Aktuell verwendet login.js automatisch:
+- Zusätzlich Required Ressourcen implementieren:
+  ConfigMap
+  Secret
+  Ingress (AWS ALB Ingress Controller)
+  HorizontalPodAutoscaler
+  Liveness Probe
+  Readiness Probe
+  Resource Requests & Limits
 
-window.location.origin + "/login.html"
+CI/CD:
 
-Damit funktioniert der Login sowohl lokal als auch später in Produktion.
-
-Lokale Umgebung:
-http://localhost:5500/login.html
-
-Beim späteren Frontend Deployment (S3 + CloudFront) muss zusätzlich in Cognito erlaubt werden:
-
-https://<cloudfront-domain>/login.html
-
-Diese URL muss in Cognito unter
-App Client → Managed login pages configuration → Allowed callback URLs
-eingetragen werden.
+- GitHub Actions Pipeline implementieren
+  1 Test (Unit Tests)
+  2 Docker Build
+  3 Push Image (ECR, Tag = Commit SHA)
+  4 Deploy via kubectl apply
+  5 Rollout Status Check
 
 ========================================
 DOKU-MERKLISTE (für Woche 4)

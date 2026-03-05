@@ -13,6 +13,14 @@
   </head>
 
   <body>
+    <script>
+      // Admin-Schutz: Ohne Login-Token keine Admin-Seite
+      const token = sessionStorage.getItem("id_token");
+      if (!token) {
+        window.location.href = "login.html";
+      }
+    </script>
+
     <header class="header">
       <div class="header-inner">
         <img src="assets/logo-clean.png" alt="Cloudy Logo" class="logo" />

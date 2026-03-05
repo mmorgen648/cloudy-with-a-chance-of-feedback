@@ -19,7 +19,7 @@
 
         <div class="header-title">Cloudy With A Chance Of Feedback</div>
 
-        <a href="login.html" class="nav-button">Admin Login</a>
+        <a href="login.html" class="nav-button" id="authButton">Admin Login</a>
       </div>
     </header>
 
@@ -37,5 +37,45 @@
         </form>
       </section>
     </main>
+
+    <script>
+      // Logout-Handling für die Startseite:
+      // - Wenn Token vorhanden: Button wird zu "Logout"
+      // - Klick auf "Logout": Session löschen + Cognito Logout + Redirect zurück
+      document.addEventListener("DOMContentLoaded", () => {
+        const authButton = document.getElementById("authButton");
+        const token = sessionStorage.getItem("id_token");
+
+        // Wenn Button fehlt: nichts tun (robust gegen HTML-Änderungen)
+        if (!authButton) return;
+
+        // Wenn kein Token vorhanden: Button bleibt "Admin Login" (Default)
+        if (!token) return;
+
+        // Token vorhanden → Logout aktivieren
+        authButton.textContent = "Logout";
+        authButton.href = "#";
+
+        authButton.addEventListener("click", (event) => {
+          event.preventDefault();
+
+          // 1) Browser-Session löschen
+          sessionStorage.clear();
+
+          // 2) Cognito Logout aufrufen + zurück auf Startseite
+          const domain =
+            "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
+          const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
+          const logoutRedirect = "http://localhost:8080/index.html";
+
+          const logoutUrl =
+            `https://${domain}/logout` +
+            `?client_id=${encodeURIComponent(clientId)}` +
+            `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
+
+          window.location.href = logoutUrl;
+        });
+      });
+    </script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
 const domain = "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
-const redirectUri = window.location.origin + "/login.html";
+const redirectUri = "http://localhost:8080/login.html";
 
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
@@ -25,6 +25,14 @@ if (code) {
     .then((response) => response.json())
     .then((data) => {
       console.log("Tokens:", data);
+
+      // Tokens im Browser speichern
+      sessionStorage.setItem("id_token", data.id_token);
+      sessionStorage.setItem("access_token", data.access_token);
+      sessionStorage.setItem("refresh_token", data.refresh_token);
+
+      // Nach erfolgreichem Login zur Admin-Seite weiterleiten
+      window.location.href = "admin.html";
     })
     .catch((error) => {
       console.error("Token exchange failed:", error);
