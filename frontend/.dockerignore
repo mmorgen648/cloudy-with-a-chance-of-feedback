@@ -1,0 +1,15 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+
+# OS
+.DS_Store
+
+# Node (falls später JS Buildtools genutzt werden)
+node_modules
+
+# Docs
+README.md

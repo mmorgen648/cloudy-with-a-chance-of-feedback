@@ -508,6 +508,8 @@ DOKU-MERKLISTE (für Woche 4)
 - Genau 1 Node wenn aktiv
 - Keine Replica-Skalierung (replicas = 1)
 - Kein HA / keine zusätzlichen Node Groups
+- Horizontal Scaling (HPA) bewusst deaktiviert wegen t3.small
+  Node-Limit (Dozentenvorgabe)
 
 ========================================
 DESTROY-LOG

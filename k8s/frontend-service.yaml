@@ -1,0 +1,21 @@
+# Kubernetes Service für das Frontend
+# Stellt den Frontend-Pod intern im Cluster bereit.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+
+spec:
+  # Standard-Service-Typ für interne Kommunikation im Cluster
+  type: ClusterIP
+
+  selector:
+    app: frontend
+
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

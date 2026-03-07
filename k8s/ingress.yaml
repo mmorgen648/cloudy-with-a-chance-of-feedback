@@ -1,0 +1,39 @@
+# Kubernetes Ingress für Cloudy Feedback
+# Dieses Ingress erzeugt später automatisch einen AWS Application Load Balancer (ALB)
+# und leitet Traffic an Frontend und Backend Services weiter.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudy-ingress
+  annotations:
+    # AWS ALB Ingress Controller verwenden
+    kubernetes.io/ingress.class: alb
+
+    # Internet-facing Load Balancer
+    alb.ingress.kubernetes.io/scheme: internet-facing
+
+    # ALB soll IP Targets nutzen (nicht NodePort)
+    alb.ingress.kubernetes.io/target-type: ip
+
+spec:
+  rules:
+    - http:
+        paths:
+          # Frontend Route
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+          # Backend API Route
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8080

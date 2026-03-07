@@ -1,0 +1,21 @@
+# Kubernetes Service für das Backend
+# Stellt den Backend-Pod intern im Cluster bereit.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: backend
+
+spec:
+  # Standard-Service-Typ für interne Kommunikation im Cluster
+  type: ClusterIP
+
+  selector:
+    app: backend
+
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080

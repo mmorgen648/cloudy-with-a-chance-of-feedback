@@ -1,0 +1,42 @@
+# Kubernetes Deployment für das Frontend
+# Startet einen nginx Pod, der die statischen Frontend-Dateien ausliefert.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+
+spec:
+  # Laut Architekturentscheidung nur eine Replica
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: frontend
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+
+    spec:
+      containers:
+        - name: frontend
+
+          # Frontend Image aus AWS ECR
+          image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend:62d1d4f
+
+          # nginx läuft im Container auf Port 80
+          ports:
+            - containerPort: 80
+
+          # Ressourcenlimits passend für t3.small
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

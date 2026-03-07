@@ -37,10 +37,17 @@
 
     <dependencies>
 
-        <!-- Spring Boot -->
+                <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Actuator für Kubernetes Health Checks -->
+        <!-- Ermöglicht /actuator/health für Liveness- und Readiness-Probes -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <dependency>

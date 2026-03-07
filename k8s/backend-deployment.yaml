@@ -1,0 +1,73 @@
+# Kubernetes Deployment für das Spring Boot Backend
+# Startet genau einen Backend-Pod gemäß Dozentenvorgabe.
+# Mehrere Replikas sind bewusst deaktiviert (t3.small / 1 Node / 1 Replica).
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+
+spec:
+  # Genau eine Replica laut Architekturentscheidung
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+
+    spec:
+      containers:
+        - name: backend
+
+          # Neues Backend-Image aus AWS ECR mit Actuator
+          image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend:9f3c2ab
+
+          # Environment Variablen aus Kubernetes Secret
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_USERNAME
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_PASSWORD
+
+          # Spring Boot läuft im Container auf Port 8080
+          ports:
+            - containerPort: 8080
+
+          # Ressourcenlimits passend für t3.small
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # Readiness Probe: Pod erhält erst Traffic, wenn die App wirklich bereit ist
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+          # Liveness Probe: Kubernetes startet den Container neu, falls er hängt
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20

@@ -1,0 +1,15 @@
+# Kubernetes ConfigMap für allgemeine Anwendungskonfiguration
+# Konfigurationswerte können hier zentral verwaltet werden,
+# ohne die Container-Images neu bauen zu müssen.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+
+data:
+  # Spring Profil für das Backend
+  SPRING_PROFILES_ACTIVE: "prod"
+
+  # Interne Backend URL im Cluster
+  BACKEND_URL: "http://backend:8080"
