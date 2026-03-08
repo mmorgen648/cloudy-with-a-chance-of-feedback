@@ -78,6 +78,37 @@ module "eks" {
 }
 
 # ------------------------------------------------------------
+# AWS Load Balancer Controller – IAM Role (IRSA)
+# REQUIREMENTS.md konform:
+# Infrastruktur wird vollständig über Terraform verwaltet
+#
+# Dieses Modul erstellt:
+# - IAM Role für den AWS Load Balancer Controller
+# - Trust Relationship mit dem EKS OIDC Provider
+# - Policy Attachment zur offiziellen AWS Controller Policy
+#
+# Der Kubernetes ServiceAccount:
+# kube-system/aws-load-balancer-controller
+# darf diese Rolle über IRSA annehmen.
+# ------------------------------------------------------------
+module "alb_controller" {
+
+  source = "./modules/alb-controller"
+
+  # Cluster Name (für sprechende IAM Rollennamen)
+  cluster_name = "cloudy-eks"
+
+  # OIDC Informationen aus dem EKS Modul
+  # Diese werden vom EKS Modul exportiert
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
+
+  # Bereits existierende AWS Policy für den Controller
+  # Diese wurde zuvor einmalig erstellt
+  policy_arn = "arn:aws:iam::038217523163:policy/AWSLoadBalancerControllerIAMPolicy"
+}
+
+# ------------------------------------------------------------
 # RDS Modul
 # Erstellt PostgreSQL (db.t3.micro) in Private Subnets
 # REQUIREMENTS.md konform

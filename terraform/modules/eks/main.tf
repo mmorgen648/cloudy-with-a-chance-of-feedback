@@ -66,6 +66,36 @@ resource "aws_eks_cluster" "this" {
 }
 
 # ============================================================
+# OIDC Provider für EKS (IRSA Unterstützung)
+# ------------------------------------------------------------
+# Jeder EKS Cluster besitzt eine eigene OIDC URL.
+# Damit Kubernetes ServiceAccounts IAM Rollen annehmen können
+# (IRSA – IAM Roles for Service Accounts), muss dieser OIDC
+# Provider einmal in IAM registriert werden.
+#
+# Wenn der Cluster zerstört und neu erstellt wird,
+# bekommt er eine neue OIDC ID. Durch Terraform wird
+# der passende Provider automatisch erzeugt.
+# ============================================================
+
+data "tls_certificate" "eks_oidc" {
+  url = aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+resource "aws_iam_openid_connect_provider" "eks" {
+
+  url = aws_eks_cluster.this.identity[0].oidc[0].issuer
+
+  client_id_list = [
+    "sts.amazonaws.com"
+  ]
+
+  thumbprint_list = [
+    data.tls_certificate.eks_oidc.certificates[0].sha1_fingerprint
+  ]
+}
+
+# ============================================================
 # IAM Role für EKS Worker Nodes (Managed Node Group)
 # Diese Rolle erlaubt den EC2-Instanzen im Cluster,
 # mit EKS, ECR und dem Netzwerk zu sprechen.

@@ -16,7 +16,13 @@ metadata:
     # ALB soll IP Targets nutzen (nicht NodePort)
     alb.ingress.kubernetes.io/target-type: ip
 
+    # NEU: Health Check Pfad für Backend Pods
+    # Spring Boot Actuator Endpoint
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+
 spec:
+  ingressClassName: alb
+
   rules:
     - http:
         paths:

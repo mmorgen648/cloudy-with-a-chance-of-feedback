@@ -24,10 +24,11 @@ spec:
 
     spec:
       containers:
-        - name: backend
+        - name:
+            backend
 
-          # Backend-Image aus AWS ECR
-          image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend:3g5u8sd
+            # Backend-Image aus AWS ECR
+          image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend:5809c5d
 
           # Environment Variablen für die Datenbank und das Spring-Profil
           env:

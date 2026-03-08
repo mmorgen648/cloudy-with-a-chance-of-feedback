@@ -47,3 +47,25 @@ output "cluster_role_arn" {
   description = "IAM role ARN used by the EKS control plane"
   value       = aws_iam_role.eks_cluster_role.arn
 }
+
+# ============================================================
+# NEU: OIDC Provider Informationen
+# ------------------------------------------------------------
+# Diese Outputs werden vom Root-Modul benötigt,
+# damit andere Module (z.B. AWS Load Balancer Controller)
+# IAM Roles für Kubernetes ServiceAccounts erstellen können.
+#
+# Dadurch kann Terraform IRSA Rollen automatisch konfigurieren.
+# ============================================================
+
+# ARN des OIDC Providers
+output "oidc_provider_arn" {
+  description = "OIDC provider ARN used for IRSA (IAM Roles for Service Accounts)"
+  value       = aws_iam_openid_connect_provider.eks.arn
+}
+
+# URL des OIDC Providers
+output "oidc_provider_url" {
+  description = "OIDC provider URL used for IRSA trust policies"
+  value       = aws_iam_openid_connect_provider.eks.url
+}
