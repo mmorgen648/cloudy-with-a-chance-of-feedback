@@ -569,6 +569,201 @@ Ergebnis:
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 16 – ALB Ingress, Public Deployment + CI/CD Pipeline
+------------------------------------------------------------
+
+ALB Ingress Infrastruktur
+
+- AWS Load Balancer Controller vollständig installiert
+- Helm Chart Deployment erfolgreich
+- Controller Pods im kube-system Namespace validiert
+
+kubectl get pods -n kube-system
+
+aws-load-balancer-controller Running
+
+- Kubernetes Ingress aktiviert
+- Ingress Class auf ALB gesetzt
+
+ingressClassName: alb
+
+- Terraform IRSA Rolle für ALB Controller implementiert
+- IAM Policy AWSLoadBalancerControllerIAMPolicy angebunden
+
+- ALB automatisch durch Kubernetes Ingress erstellt
+- Internet-facing Application Load Balancer validiert
+
+aws elbv2 describe-load-balancers
+
+- Öffentliche URL generiert
+
+k8s-default-cloudyin-xxxxxxxx.eu-central-1.elb.amazonaws.com
+
+Erster Zugriffstest
+
+- Frontend über ALB erfolgreich erreichbar
+- Anwendung erstmals öffentlich deployt
+
+ALB Debugging
+
+Initiale Probleme:
+
+1. Webhook Fehler
+   aws-load-balancer-webhook-service ohne Endpoints
+
+2. Credential Fehler
+   Controller konnte keine IAM Rolle beziehen
+
+3. Backend Health Check Fehler
+
+Root Cause:
+
+Backend Health Endpoint geschützt durch Spring Security
+
+Health Check Response:
+
+HTTP 401
+
+ALB erwartet:
+
+HTTP 200
+
+Fix:
+
+Ingress Annotation ergänzt
+
+alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+
+Verifikation
+
+aws elbv2 describe-target-health
+
+Frontend Target:
+
+State: healthy
+
+Backend Target:
+
+State: healthy
+
+Ingress erfolgreich aktiv
+
+kubectl get ingress
+
+cloudy-ingress → ADDRESS gesetzt
+
+ALB Routing validiert
+
+/      → Frontend Service
+/api   → Backend Service
+
+Cognito Integration Problem erkannt
+
+- Login über ALB funktionierte zunächst nicht
+- Ursache:
+  Cognito Callback URLs nur für localhost konfiguriert
+
+Fix geplant für nächste Phase:
+
+Callback URLs erweitern um
+
+ALB URL + später CloudFront Domain
+
+CI/CD Pipeline (GitHub Actions)
+
+- GitHub OIDC Provider für AWS eingerichtet
+- IAM Role erstellt:
+
+GitHubActionsEKSDeployRole
+
+- Trust Relationship mit GitHub OIDC konfiguriert
+- AWS Policies angebunden:
+
+AmazonEC2ContainerRegistryPowerUser
+AmazonEKSClusterPolicy
+AmazonEKSWorkerNodePolicy
+
+- GitHub Actions Workflow erstellt
+
+.github/workflows/main.yml
+
+Pipeline Schritte:
+
+1. Unit Tests ausführen
+2. Docker Image bauen
+3. Image nach ECR pushen (Tag = Git Commit SHA)
+4. Deployment auf EKS
+5. kubectl rollout status prüfen
+
+Pipeline Debugging
+
+Fehler 1:
+
+AccessDeniedException
+eks:DescribeCluster
+
+Fix:
+
+AmazonEKSWorkerNodePolicy an Role angehängt
+
+Fehler 2:
+
+kubectl Zugriff auf Cluster nicht erlaubt
+
+Ursache:
+
+GitHub Role nicht im aws-auth ConfigMap eingetragen
+
+Fix:
+
+aws-auth erweitert
+
+GitHubActionsEKSDeployRole → system:masters
+
+- aws-auth.yaml lokal exportiert als Referenz für zukünftige Cluster-Rebuilds
+
+Deployment Pipeline erfolgreich
+
+GitHub Actions Ergebnis:
+
+Pipeline Status: SUCCESS
+
+Deployment Verifikation
+
+kubectl get pods
+
+backend   Running
+frontend  Running
+
+Deployment Details geprüft
+
+kubectl describe deployment backend
+
+Image:
+
+cloudy-feedback-backend:5809c5d
+
+Liveness Probe:
+
+/actuator/health
+
+Readiness Probe:
+
+/actuator/health
+
+Ergebnis
+
+- Vollständiger Public Kubernetes Deployment erfolgreich
+- ALB Ingress Routing funktioniert
+- AWS Load Balancer Controller stabil
+- GitHub Actions CI/CD Pipeline funktionsfähig
+- Automatisches Deployment auf EKS erfolgreich
+- Infrastruktur weiterhin REQUIREMENTS-konform
+- Kostenkontrolle aktiv (Node Group → 0, RDS gestoppt)
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -595,54 +790,65 @@ AKTUELLER PROJEKTSTATUS
 ✔ Managed Node Group konfiguriert (min=0 / max=4)
 ✔ OIDC Provider + IRSA korrekt eingerichtet
 ✔ AWS Load Balancer Controller installiert
-✔ EKS Cluster bewusst zerstört (Kostenkontrolle aktiv)
+✔ Kubernetes Ingress über AWS ALB implementiert
+✔ ALB erstellt automatisch Application Load Balancer
+✔ ALB Routing funktioniert:
+  /      → Frontend
+  /api   → Backend
+
+✔ Backend + Frontend erfolgreich auf EKS deployed
+✔ Pods laufen stabil im Cluster
+✔ Kubernetes Liveness / Readiness Probes funktionieren
+✔ Backend Health Check Problem (401) analysiert und behoben
+✔ ALB Health Check Pfad korrekt konfiguriert (/actuator/health)
+
+✔ AWS Target Groups validiert
+✔ Frontend Target → healthy
+✔ Backend Target → healthy
+
+✔ Öffentliche Anwendung über ALB erreichbar
 
 ✔ RDS PostgreSQL in Private Subnets implementiert
 ✔ Snapshot-Strategie mit stabilem Random-Suffix umgesetzt
 ✔ Infrastruktur vollständig datenbankfähig
-✔ RDS aktuell gestoppt (Kostenkontrolle aktiv)
-
-✔ Unit Tests (FeedbackService + ComprehendService) erfolgreich
 
 ✔ Frontend Grundstruktur implementiert (Public UI + Admin UI)
 ✔ Design-System definiert und dokumentiert
 ✔ login.html + login.js implementiert
-✔ Cognito Hosted Login erfolgreich integriert
-✔ OAuth Authorization Code Redirect funktioniert
-✔ Token Exchange erfolgreich getestet (curl)
-✔ Token Handling im Browser implementiert (sessionStorage)
-✔ Admin-Seite geschützt (Token-Check vor Zugriff auf admin.html)
-✔ Logout implementiert (Session löschen + Cognito Logout + Redirect)
-✔ Cognito Sign-out URL konfiguriert:
-  http://localhost:8080/index.html
-✔ Frontend Dockerfile implementiert (nginx)
-✔ Frontend Container erfolgreich gebaut und getestet (Docker)
-✔ Frontend läuft über nginx Container:
-  http://localhost:8080
+✔ Cognito Hosted Login integriert
+✔ Authorization Code Flow erfolgreich getestet
+✔ Token Handling im Browser implementiert
+✔ Admin-Seite geschützt
+✔ Logout Flow implementiert
+
+✔ Frontend Docker Container erfolgreich gebaut
+✔ Frontend Image mit SHA Tag in ECR gespeichert
 
 ✔ Kubernetes Manifeste vollständig implementiert
 ✔ Backend Deployment mit Actuator Health Checks
 ✔ Kubernetes Secrets für Datenbankzugriff vorbereitet
 ✔ AWS ALB Ingress Routing definiert
 ✔ HorizontalPodAutoscaler vorbereitet
-✔ Backend Docker Image mit SHA-Tag in ECR gespeichert
-✔ Frontend Docker Image mit SHA-Tag in ECR gespeichert
-✔ .gitattributes ins Repository Root verschoben
-✔ frontend/.dockerignore ergänzt
 
-✔ Erstes vollständiges Deployment auf EKS erfolgreich
-✔ Backend Pod läuft stabil im Cluster
-✔ Frontend Pod läuft stabil im Cluster
-✔ Kubernetes Health Probes funktionieren korrekt
-✔ Docker Plattformproblem (ARM → AMD64) identifiziert und gelöst
-✔ Versioniertes Backend Image erfolgreich auf EKS deployed
-✔ Deployment mit Git SHA Image Tags durchgeführt
+✔ CI/CD Pipeline über GitHub Actions implementiert
+✔ GitHub OIDC Integration für AWS eingerichtet
+✔ IAM Role für GitHub Actions erstellt
+✔ ECR Push via Pipeline erfolgreich
+✔ Deployment auf EKS via Pipeline erfolgreich
+✔ kubectl rollout status Prüfung integriert
+
+✔ Deployment Pipeline erfolgreich getestet
+✔ Backend + Frontend Pods laufen nach Pipeline Deployment
+
+✔ Infrastruktur kostenoptimiert beendet
+✔ Node Group auf 0 gesetzt
+✔ RDS Instanz gestoppt
 
 Projektphase:
-Woche 3 – Kubernetes Deployment (Cluster Deployment erfolgreich)
+Woche 3 – CI/CD Pipeline + Public Deployment abgeschlossen
 
 Nächste Phase:
-Woche 3 – ALB Ingress + öffentliche Erreichbarkeit
+Woche 4 – CloudFront + HTTPS + DNS (Route53)
 
 ------------------------------------------------------------
 OPEN TECH TASKS
@@ -653,20 +859,31 @@ Frontend / Backend Integration
 - Feedback Formular mit Backend API verbinden
   POST /api/feedback
 
+Cognito / Auth Integration
+
+- Cognito Callback URLs für ALB Domain ergänzen
+- Cognito Callback URLs für CloudFront Domain ergänzen
+- Login über öffentliche Domain testen
+- Token Handling über Public Domain validieren
+
 Kubernetes / Infrastruktur
 
-- Anwendung über AWS ALB erreichbar machen
-- Ingress Deployment testen
-- Routing Frontend → Backend validieren
+- HorizontalPodAutoscaler im Cluster aktiv testen
+- Skalierung des Backend Pods validieren
+- Ressourcenlimits im Cluster beobachten
 
-CI/CD Pipeline
+CI/CD Pipeline Erweiterung
 
-- GitHub Actions Workflow erstellen
-  1 Unit Tests ausführen
-  2 Docker Images bauen
-  3 Images nach ECR pushen (Tag = Commit SHA)
-  4 Deployment auf EKS durchführen
-  5 kubectl rollout status prüfen
+- Pipeline um Rollout Monitoring erweitern
+- Pipeline Logging verbessern (Debugbarkeit)
+
+Cloud Infrastruktur (nächste Phase)
+
+- ACM Zertifikat erstellen (HTTPS)
+- CloudFront Distribution erstellen
+- ALB als Origin konfigurieren
+- Route53 DNS Eintrag erstellen
+- HTTPS Zugriff über CloudFront testen
 
 ========================================
 DOKU-MERKLISTE (für Woche 4)
@@ -674,15 +891,95 @@ DOKU-MERKLISTE (für Woche 4)
 - AWS Profil: cloudy
 - AWS Region: eu-central-1
 - AWS Account-ID: 038217523163
-- Architekturentscheidung: EKS (nicht EC2)
-- Snapshot-Strategie: random_id statt timestamp()
-- EKS Control Plane wird bei Inaktivität zerstört (Kostenregel)
-- EKS Instance Type: t3.small (Dozentenvorgabe – nicht ändern)
-- Genau 1 Node wenn aktiv
-- Keine Replica-Skalierung (replicas = 1)
-- Kein HA / keine zusätzlichen Node Groups
-- Horizontal Scaling (HPA) bewusst deaktiviert wegen t3.small
-  Node-Limit (Dozentenvorgabe)
+
+Architekturentscheidungen
+
+- Kubernetes Plattform: AWS EKS (Managed Kubernetes)
+- Container Registry: AWS ECR
+- Deployment Strategie: Git Commit SHA Versionierung (kein :latest)
+- Infrastructure as Code: Terraform (modularisiert)
+
+Terraform
+
+- Remote State: S3 + Versionierung
+- State Locking: DynamoDB
+- Terraform Module Struktur:
+  - modules/vpc
+  - modules/security-groups
+  - modules/eks
+  - modules/rds
+  - modules/alb-controller
+
+EKS Architektur
+
+- Instance Type: t3.small (Dozentenvorgabe)
+- Genau 1 Node während Entwicklung
+- Node Group: min=0 / desired=1 / max=4
+- Worker Nodes laufen in Public Subnets (kein NAT Gateway)
+- Kostenkontrolle: Node Group wird bei Pause auf 0 gesetzt
+- Bei längerer Inaktivität: terraform destroy module.eks
+
+Kubernetes Architektur
+
+- Deployment:
+  - backend
+  - frontend
+- Services:
+  - ClusterIP Services für interne Kommunikation
+- Ingress:
+  - AWS Application Load Balancer (ALB)
+
+Health Checks
+
+- Kubernetes Liveness Probe:
+  /actuator/health
+
+- Kubernetes Readiness Probe:
+  /actuator/health
+
+- ALB Health Check:
+  /actuator/health
+
+Problem & Lösung:
+
+- Spring Security blockierte Health Endpoint
+- ALB erhielt HTTP 401
+- Lösung: Health Endpoint öffentlich freigeben
+
+Cognito Auth Architektur
+
+- Cognito User Pool
+- Authorization Code Flow
+- Hosted Login Page
+- JWT Token Validierung im Backend
+- Gruppenbasierte Rollenprüfung (cognito:groups → ROLE_ADMIN)
+
+CI/CD Architektur
+
+- GitHub Actions Pipeline
+- GitHub OIDC → AWS IAM Role
+- Keine statischen AWS Credentials
+- Pipeline Schritte:
+
+1. Unit Tests
+2. Docker Build
+3. Push nach AWS ECR
+4. Deployment auf EKS
+5. kubectl rollout status
+
+Kostenkontrolle
+
+- EKS Node Group → 0 bei Pause
+- RDS Instanz stoppen
+- Terraform Destroy für längere Pausen
+- AWS Budget Alert ($15)
+
+Snapshot Strategie
+
+- RDS Final Snapshot aktiviert
+- random_id statt timestamp
+- verhindert Snapshot Namenskonflikte
+- verhindert Terraform Plan Drift
 
 ========================================
 DESTROY-LOG
