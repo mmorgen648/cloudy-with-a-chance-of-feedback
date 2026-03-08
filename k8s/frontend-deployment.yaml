@@ -26,7 +26,7 @@ spec:
         - name: frontend
 
           # Frontend Image aus AWS ECR
-          image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend:62d1d4f
+          image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend:74k1f9u
 
           # nginx läuft im Container auf Port 80
           ports:

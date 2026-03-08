@@ -140,10 +140,11 @@ resource "aws_eks_node_group" "this" {
 
   # Skalierungsregeln laut Vorgabe
   scaling_config {
-    desired_size = 0
-    min_size     = 0
-    max_size     = 4
-  }
+  # Während aktiver Entwicklung läuft genau ein Worker Node
+  desired_size = 1
+  min_size     = 1
+  max_size     = 4
+}
 
   # Instanztyp – ausreichend für Projekt
   instance_types = ["t3.small"]

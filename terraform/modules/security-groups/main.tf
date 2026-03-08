@@ -26,10 +26,14 @@ resource "aws_security_group" "rds_sg" {
 # Ingress Regel: EKS → RDS (PostgreSQL Port 5432)
 # ------------------------------------------------------------
 resource "aws_security_group_rule" "rds_ingress_from_eks" {
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.rds_sg.id
-  source_security_group_id = aws_security_group.eks_cluster_sg.id
+  type              = "ingress"
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+
+  # Ziel: RDS Security Group
+  security_group_id = aws_security_group.rds_sg.id
+
+  # Zugriff aus der gesamten VPC (EKS Worker Nodes liegen hier)
+  cidr_blocks = ["10.0.0.0/16"]
 }

@@ -403,6 +403,172 @@ Ergebnis:
 Status: Teilweise abgeschlossen
 
 ------------------------------------------------------------
+TAG 13 – Cognito Auth Flow finalisiert + Frontend Dockerisierung
+------------------------------------------------------------
+
+- Cognito App Client ohne Secret erstellt:
+  - Name: cloudy-feedback-frontend
+  - Authorization Code Flow für Browser angepasst
+
+- Redirect URLs aktualisiert:
+  - http://localhost:8080/login.html
+  - http://localhost:8080/index.html
+
+- login.js erweitert:
+  - Authorization Code (?code=...) erkannt
+  - Token Exchange gegen Cognito /oauth2/token durchgeführt
+  - id_token / access_token im Browser gespeichert (sessionStorage)
+
+- Admin-Seite geschützt:
+  - Token-Prüfung vor Zugriff auf admin.html
+  - Redirect zu login.html wenn kein Token vorhanden
+
+- Logout implementiert:
+  - sessionStorage.clear()
+  - Cognito /logout Endpoint integriert
+  - Redirect zurück zur Startseite
+
+- Frontend Redirect-Port auf Docker-Setup umgestellt:
+  - localhost:8000 → localhost:8080
+
+- Frontend Dockerisierung umgesetzt:
+  - Dockerfile erstellt (nginx:alpine)
+  - Statische Dateien in /usr/share/nginx/html kopiert
+  - Container-Port 80 freigegeben
+
+- Docker Build erfolgreich getestet:
+  - Image: cloudy-frontend
+  - Container gestartet mit Port Mapping 8080:80
+
+- Auth-Flow im Container getestet:
+  - Cognito Login funktioniert
+  - Token Speicherung funktioniert
+  - Admin-Seite geschützt
+  - Logout Flow funktioniert
+
+Ergebnis:
+- Vollständiger Frontend Auth Flow implementiert
+- Cognito Integration produktionsreif
+- Frontend Container lauffähig
+- Grundlage für Kubernetes Deployment geschaffen
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
+TAG 14 – Kubernetes Manifeste + Container Registry Erweiterung
+------------------------------------------------------------
+
+- Kubernetes Manifeste erstellt:
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - frontend-deployment.yaml
+  - frontend-service.yaml
+  - configmap.yaml
+  - secret.yaml
+  - ingress.yaml
+  - hpa-backend.yaml
+
+- Backend Deployment konfiguriert:
+  - Image aus AWS ECR
+  - Commit-SHA Tagging (kein :latest)
+  - Environment Variablen über Kubernetes Secret
+  - Ressourcenlimits passend für t3.small
+
+- Kubernetes Health Checks implementiert:
+  - Liveness Probe → /actuator/health
+  - Readiness Probe → /actuator/health
+
+- Spring Boot Actuator integriert:
+  - Health Endpoint für Kubernetes Monitoring
+  - Neues Backend Docker Image gebaut
+  - Image mit Git Commit SHA getaggt
+  - Image erfolgreich nach ECR gepusht
+
+- Frontend Container Registry erweitert:
+  - Eigenes ECR Repository erstellt
+  - Frontend Image mit Commit-SHA getaggt
+  - Image erfolgreich nach ECR gepusht
+
+- Repository-Struktur verbessert:
+  - .gitattributes von /backend nach Repository Root verschoben
+  - frontend/.dockerignore erstellt
+
+- Kubernetes Entwicklungsumgebung verbessert:
+  - RedHat YAML Extension installiert
+  - Kubernetes YAML Schema Mapping konfiguriert
+  - YAML Autoformatierung beim Speichern eingerichtet
+
+Ergebnis:
+- Vollständige Kubernetes Manifeste implementiert
+- Container Images für Frontend und Backend versioniert in ECR
+- Projektstruktur bereinigt
+- Infrastruktur bereit für Deployment auf EKS
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
+TAG 15 – Erstes EKS Deployment erfolgreich
+------------------------------------------------------------
+
+- EKS Cluster via Terraform gestartet
+- Node Group aktiviert (t3.small, desired=1)
+
+- Kubernetes Deployment durchgeführt:
+  kubectl apply -f k8s/
+
+- Frontend Pod erfolgreich gestartet
+- Backend Pod gestartet, zunächst CrashLoopBackOff
+
+Root Cause Analyse:
+
+- Kubernetes Liveness / Readiness Probe schlug fehl
+- Ursache: Spring Security blockierte /actuator/health
+- Kubernetes erhielt HTTP 401 statt HTTP 200
+
+Fix:
+
+- SecurityConfig angepasst:
+  .requestMatchers("/actuator/**").permitAll()
+
+- Backend Image neu gebaut
+
+Weiterer Fehler entdeckt:
+
+- Docker Image Architekturproblem
+- Mac M-Series baut ARM Images
+- EKS Nodes laufen auf AMD64
+
+Fehler im Cluster:
+
+no match for platform in manifest
+
+Fix:
+
+docker build --platform linux/amd64
+
+- Backend Image neu gebaut
+- Image mit Git Commit SHA getaggt
+- Image nach ECR gepusht
+- Deployment auf neues Image aktualisiert
+
+Verifikation:
+
+kubectl get pods
+
+backend 1/1 Running
+frontend 1/1 Running
+
+Ergebnis:
+
+- Erstes vollständiges Deployment auf EKS erfolgreich
+- Backend + Frontend laufen stabil im Cluster
+- PostgreSQL Verbindung zu RDS erfolgreich
+- Kubernetes Health Checks funktionieren
+- Docker ARM → AMD64 Problem sauber gelöst
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -454,46 +620,53 @@ AKTUELLER PROJEKTSTATUS
 ✔ Frontend läuft über nginx Container:
   http://localhost:8080
 
+✔ Kubernetes Manifeste vollständig implementiert
+✔ Backend Deployment mit Actuator Health Checks
+✔ Kubernetes Secrets für Datenbankzugriff vorbereitet
+✔ AWS ALB Ingress Routing definiert
+✔ HorizontalPodAutoscaler vorbereitet
+✔ Backend Docker Image mit SHA-Tag in ECR gespeichert
+✔ Frontend Docker Image mit SHA-Tag in ECR gespeichert
+✔ .gitattributes ins Repository Root verschoben
+✔ frontend/.dockerignore ergänzt
+
+✔ Erstes vollständiges Deployment auf EKS erfolgreich
+✔ Backend Pod läuft stabil im Cluster
+✔ Frontend Pod läuft stabil im Cluster
+✔ Kubernetes Health Probes funktionieren korrekt
+✔ Docker Plattformproblem (ARM → AMD64) identifiziert und gelöst
+✔ Versioniertes Backend Image erfolgreich auf EKS deployed
+✔ Deployment mit Git SHA Image Tags durchgeführt
+
 Projektphase:
-Woche 3 – Frontend
+Woche 3 – Kubernetes Deployment (Cluster Deployment erfolgreich)
 
 Nächste Phase:
-Tag 14 – Kubernetes Manifeste
+Woche 3 – ALB Ingress + öffentliche Erreichbarkeit
 
 ------------------------------------------------------------
 OPEN TECH TASKS
 ------------------------------------------------------------
 
-Frontend / Backend Integration:
+Frontend / Backend Integration
 
 - Feedback Formular mit Backend API verbinden
   POST /api/feedback
 
-Kubernetes Deployment:
+Kubernetes / Infrastruktur
 
-- Kubernetes Manifeste erstellen:
-  frontend-deployment.yaml
-  frontend-service.yaml
-  backend-deployment.yaml
-  backend-service.yaml
+- Anwendung über AWS ALB erreichbar machen
+- Ingress Deployment testen
+- Routing Frontend → Backend validieren
 
-- Zusätzlich Required Ressourcen implementieren:
-  ConfigMap
-  Secret
-  Ingress (AWS ALB Ingress Controller)
-  HorizontalPodAutoscaler
-  Liveness Probe
-  Readiness Probe
-  Resource Requests & Limits
+CI/CD Pipeline
 
-CI/CD:
-
-- GitHub Actions Pipeline implementieren
-  1 Test (Unit Tests)
-  2 Docker Build
-  3 Push Image (ECR, Tag = Commit SHA)
-  4 Deploy via kubectl apply
-  5 Rollout Status Check
+- GitHub Actions Workflow erstellen
+  1 Unit Tests ausführen
+  2 Docker Images bauen
+  3 Images nach ECR pushen (Tag = Commit SHA)
+  4 Deployment auf EKS durchführen
+  5 kubectl rollout status prüfen
 
 ========================================
 DOKU-MERKLISTE (für Woche 4)
@@ -523,4 +696,9 @@ DESTROY-LOG
 - Zerstörte Module: module.eks
 - Grund: Testlauf abgebrochen – Kostenkontrolle gemäß REQUIREMENTS.md
 - RDS Snapshot: nicht erforderlich (keine produktiven Daten)
+----------------------------------------
+2026-03-08
+- Zerstörte Module: module.eks
+- Grund: Tagesende – Kostenkontrolle gemäß REQUIREMENTS.md
+- RDS Snapshot: nicht erforderlich (RDS gestoppt)
 ----------------------------------------
