@@ -54,3 +54,4 @@ dist/
 *.zip
 *.tar.gz
 *.rar
+aws-auth.yaml
