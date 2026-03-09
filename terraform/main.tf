@@ -14,6 +14,47 @@ variable "db_password" {
 }
 
 # ------------------------------------------------------------
+# Root Variable: Public Domain
+#
+# Domain für die öffentliche Anwendung.
+# Diese Domain wird später verwendet für:
+# - ACM TLS Zertifikat
+# - CloudFront Distribution
+# - Route53 DNS Records
+#
+# Beispiel:
+# app.example.com
+#
+# Der echte Wert wird in terraform.tfvars definiert
+# und NICHT im Code hardcodiert.
+# ------------------------------------------------------------
+variable "domain_name" {
+  description = "Public domain name for the application"
+  type        = string
+}
+
+# ------------------------------------------------------------
+# Root Variable: Route53 Hosted Zone ID
+#
+# Terraform benötigt diese ID, um automatisch DNS Records
+# in Route53 zu erstellen.
+#
+# Diese wird benötigt für:
+# - ACM Zertifikatsvalidierung (DNS)
+# - CloudFront DNS Record
+#
+# Beispiel:
+# Z123456ABCDEFG
+#
+# Der tatsächliche Wert wird ebenfalls über terraform.tfvars
+# übergeben.
+# ------------------------------------------------------------
+variable "hosted_zone_id" {
+  description = "Route53 Hosted Zone ID used for DNS records"
+  type        = string
+}
+
+# ------------------------------------------------------------
 # VPC Modul (Pflicht-Struktur: modules/vpc)
 # Erstellt: VPC, Public/Private Subnets, IGW, Routing
 # ------------------------------------------------------------
@@ -132,6 +173,139 @@ module "rds" {
 }
 
 # ------------------------------------------------------------
+# ACM Modul
+#
+# Erstellt ein TLS Zertifikat für CloudFront.
+#
+# REQUIREMENTS.md:
+# CloudFront benötigt zwingend ein Zertifikat aus us-east-1.
+#
+# Deshalb wird hier der AWS Provider Alias an das Modul
+# übergeben.
+#
+# Dadurch nutzt das Modul automatisch:
+# provider "aws" { alias = "us_east_1" }
+# ------------------------------------------------------------
+module "acm" {
+
+  source = "./modules/acm"
+
+  # Übergibt Provider Alias an das Modul
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  # Öffentliche Domain der Anwendung
+  domain_name = var.domain_name
+
+  # Route53 Hosted Zone
+  hosted_zone_id = var.hosted_zone_id
+}
+
+# ------------------------------------------------------------
+# ACM Zertifikat für ALB (Region eu-central-1)
+#
+# Dieses Zertifikat wird vom Application Load Balancer
+# verwendet, damit CloudFront über HTTPS zum ALB sprechen kann.
+#
+# Checkliste verlangt:
+# CloudFront → HTTPS → ALB
+# ------------------------------------------------------------
+resource "aws_acm_certificate" "alb_cert" {
+
+  domain_name       = var.domain_name
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Project = "CloudyWithAChanceOfFeedback"
+  }
+}
+
+# ------------------------------------------------------------
+# Route53 DNS Record für ALB Zertifikatsvalidierung
+#
+# ACM gibt einen DNS Record zurück, der erstellt werden muss,
+# damit das Zertifikat validiert werden kann.
+# Terraform erstellt diesen Record automatisch.
+# ------------------------------------------------------------
+resource "aws_route53_record" "alb_cert_validation" {
+
+  for_each = {
+    for dvo in aws_acm_certificate.alb_cert.domain_validation_options :
+    dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  zone_id = var.hosted_zone_id
+
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.record]
+
+  ttl = 60
+}
+
+# ------------------------------------------------------------
+# ACM Zertifikatsvalidierung für ALB
+#
+# Terraform wartet hier, bis Route53 den DNS Record
+# propagiert hat und das Zertifikat erfolgreich validiert
+# wurde.
+# ------------------------------------------------------------
+resource "aws_acm_certificate_validation" "alb_cert_validation" {
+
+  certificate_arn = aws_acm_certificate.alb_cert.arn
+
+  validation_record_fqdns = [
+    for record in aws_route53_record.alb_cert_validation :
+    record.fqdn
+  ]
+}
+
+# ------------------------------------------------------------
+# ALB automatisch finden
+#
+# Der ALB wird nicht direkt von Terraform erstellt,
+# sondern vom Kubernetes Ingress über den
+# AWS Load Balancer Controller.
+#
+# Diese Data Source liest den aktuell existierenden
+# ALB aus AWS, damit wir seinen DNS Namen automatisch
+# verwenden können.
+# ------------------------------------------------------------
+data "aws_lb" "eks_ingress" {
+
+  tags = {
+    "elbv2.k8s.aws/cluster" = "cloudy-eks"
+  }
+}
+
+# ------------------------------------------------------------
+# CloudFront Modul
+#
+# CloudFront sitzt vor dem ALB und stellt HTTPS + CDN bereit.
+# ------------------------------------------------------------
+module "cloudfront" {
+
+  source = "./modules/cloudfront"
+
+  domain_name = var.domain_name
+
+  # ACM Zertifikat aus dem ACM Modul
+  acm_certificate_arn = module.acm.aws_acm_certificate_arn
+
+  # ALB DNS automatisch aus AWS lesen
+alb_dns_name = data.aws_lb.eks_ingress.dns_name
+}
+
+# ------------------------------------------------------------
 # RDS Outputs (Weiterleitung aus Modul)
 # ------------------------------------------------------------
 output "rds_endpoint" {
@@ -144,4 +318,35 @@ output "rds_port" {
 
 output "rds_db_name" {
   value = module.rds.db_name
+}
+
+# ------------------------------------------------------------
+# Route53 DNS Record
+#
+# Dieser Record verbindet deine öffentliche Domain
+#
+# cloudy.cloudhelden-projekte.com
+#
+# mit der CloudFront Distribution.
+#
+# Dadurch ist die Anwendung später erreichbar über:
+#
+# https://cloudy.cloudhelden-projekte.com
+#
+# Terraform liest automatisch:
+# - CloudFront Domain
+# - CloudFront Hosted Zone
+# ------------------------------------------------------------
+resource "aws_route53_record" "cloudfront_alias" {
+
+  zone_id = var.hosted_zone_id
+
+  name = var.domain_name
+  type = "A"
+
+  alias {
+    name                   = module.cloudfront.cloudfront_domain_name
+    zone_id                = module.cloudfront.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
 }

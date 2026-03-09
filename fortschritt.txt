@@ -764,6 +764,130 @@ Ergebnis
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 17 – CloudFront, HTTPS + DNS Integration
+------------------------------------------------------------
+
+CloudFront Infrastruktur
+
+- CloudFront Modul erstellt:
+  terraform/modules/cloudfront/
+
+- CloudFront Distribution per Terraform erstellt
+- Architektur gemäß REQUIREMENTS.md umgesetzt:
+
+Route53
+↓
+CloudFront
+↓
+ALB (EKS Ingress)
+↓
+Kubernetes Services
+
+- ALB DNS automatisch aus Terraform State gelesen
+  data.aws_lb.eks_ingress
+
+- ALB als CloudFront Origin konfiguriert
+- Origin Protocol Policy auf HTTPS gesetzt
+
+HTTPS / Zertifikate
+
+- ACM Zertifikat für ALB erstellt (eu-central-1)
+- ACM Zertifikat für CloudFront erstellt (us-east-1)
+- Zertifikatsvalidierung über Route53 DNS Records durchgeführt
+
+CloudFront Konfiguration
+
+- Default Cache Behavior konfiguriert
+- Viewer Protocol Policy: redirect-to-https
+- Cookies und Query Strings werden vollständig an ALB weitergegeben
+
+Fix: CloudFront → ALB Verbindung
+
+Initialer Fehler:
+
+CloudFront konnte ALB nicht erreichen
+
+Fehlerbild:
+
+502 Bad Gateway
+
+Root Cause:
+
+CloudFront leitete den Host Header nicht korrekt an den ALB weiter.
+
+Fix:
+
+CloudFront Konfiguration angepasst:
+
+headers = ["Host"]
+
+Danach konnte CloudFront korrekt mit dem ALB kommunizieren.
+
+Fix: API Routing über CloudFront
+
+Initiales Problem:
+
+API Requests über CloudFront funktionierten nicht zuverlässig.
+
+Fehlerbilder:
+
+502 Bad Gateway
+503 Service Temporarily Unavailable
+
+Root Cause:
+
+CloudFront behandelte API Requests wie statische Inhalte
+und leitete Requests nicht vollständig an den ALB weiter.
+
+Fix:
+
+Ordered Cache Behavior für:
+
+/api/*
+
+Konfiguration:
+
+- Caching deaktiviert
+- Alle HTTP Methoden erlaubt
+- Cookies werden weitergeleitet
+- Query Strings werden weitergeleitet
+- Host Header wird weitergeleitet
+
+Ergebnis:
+
+API Requests werden korrekt von CloudFront
+an den ALB und anschließend an das Backend
+im EKS Cluster weitergeleitet.
+
+DNS Integration
+
+- Route53 Alias Record erstellt:
+
+cloudy.cloudhelden-projekte.com
+→ CloudFront Distribution
+
+Verifikation
+
+- HTTPS Zugriff erfolgreich getestet
+- CloudFront liefert Frontend korrekt aus
+- API Routing über /api funktioniert
+- Globaler Edge Layer aktiv
+
+Kostenkontrolle
+
+- EKS Node Group wieder auf desired=0 gesetzt
+- RDS Instanz bleibt gestoppt
+
+Ergebnis
+
+- Vollständige Production Architektur implementiert
+- Globales CDN aktiv
+- HTTPS vollständig integriert
+- Domain Routing über Route53 + CloudFront stabil
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -808,6 +932,24 @@ AKTUELLER PROJEKTSTATUS
 
 ✔ Öffentliche Anwendung über ALB erreichbar
 
+✔ CloudFront Distribution vor dem ALB implementiert
+✔ Globales CDN über CloudFront aktiv
+✔ HTTPS vollständig integriert
+✔ ACM Zertifikate validiert:
+  - ALB Zertifikat (eu-central-1)
+  - CloudFront Zertifikat (us-east-1)
+
+✔ Route53 DNS Routing aktiv:
+  cloudy.cloudhelden-projekte.com → CloudFront Distribution
+
+✔ CloudFront → ALB Origin Verbindung funktioniert
+✔ Host Header Forwarding korrekt konfiguriert
+✔ API Routing über CloudFront korrekt konfiguriert:
+  /api → CloudFront → ALB → Backend
+
+✔ CloudFront Cache Behavior für API deaktiviert
+✔ Ordered Cache Behavior für /api/* implementiert
+
 ✔ RDS PostgreSQL in Private Subnets implementiert
 ✔ Snapshot-Strategie mit stabilem Random-Suffix umgesetzt
 ✔ Infrastruktur vollständig datenbankfähig
@@ -841,27 +983,40 @@ AKTUELLER PROJEKTSTATUS
 ✔ Backend + Frontend Pods laufen nach Pipeline Deployment
 
 ✔ Infrastruktur kostenoptimiert beendet
-✔ Node Group auf 0 gesetzt
+✔ EKS Node Group auf 0 gesetzt
 ✔ RDS Instanz gestoppt
 
 Projektphase:
-Woche 3 – CI/CD Pipeline + Public Deployment abgeschlossen
+Woche 4 – CloudFront + HTTPS + DNS (Integration abgeschlossen)
+
+Offener Schritt:
+Backend ↔ RDS Verbindung im EKS Cluster testen und stabilisieren
 
 Nächste Phase:
-Woche 4 – CloudFront + HTTPS + DNS (Route53)
+End-to-End Systemtests (Frontend → CloudFront → ALB → Backend → RDS)
 
 ------------------------------------------------------------
 OPEN TECH TASKS
 ------------------------------------------------------------
+
+Backend / Datenbank Integration
+
+- RDS Instanz starten
+- Backend ↔ RDS Verbindung im EKS Cluster testen
+- CrashLoopBackOff des Backend Pods analysieren und beheben
+- Datenbankverbindung über Kubernetes Secrets validieren
+- End-to-End Test durchführen:
+  CloudFront → ALB → Backend → RDS
 
 Frontend / Backend Integration
 
 - Feedback Formular mit Backend API verbinden
   POST /api/feedback
 
+- Feedback Submission über Public Domain testen
+
 Cognito / Auth Integration
 
-- Cognito Callback URLs für ALB Domain ergänzen
 - Cognito Callback URLs für CloudFront Domain ergänzen
 - Login über öffentliche Domain testen
 - Token Handling über Public Domain validieren
@@ -876,14 +1031,6 @@ CI/CD Pipeline Erweiterung
 
 - Pipeline um Rollout Monitoring erweitern
 - Pipeline Logging verbessern (Debugbarkeit)
-
-Cloud Infrastruktur (nächste Phase)
-
-- ACM Zertifikat erstellen (HTTPS)
-- CloudFront Distribution erstellen
-- ALB als Origin konfigurieren
-- Route53 DNS Eintrag erstellen
-- HTTPS Zugriff über CloudFront testen
 
 ========================================
 DOKU-MERKLISTE (für Woche 4)
@@ -909,6 +1056,7 @@ Terraform
   - modules/eks
   - modules/rds
   - modules/alb-controller
+  - modules/cloudfront
 
 EKS Architektur
 
@@ -928,6 +1076,43 @@ Kubernetes Architektur
   - ClusterIP Services für interne Kommunikation
 - Ingress:
   - AWS Application Load Balancer (ALB)
+
+CloudFront Architektur
+
+- CloudFront Distribution vor dem ALB positioniert
+- CloudFront fungiert als globaler CDN Edge Layer
+- Origin: AWS Application Load Balancer (ALB)
+
+Request Flow:
+
+User
+↓
+Route53
+↓
+CloudFront
+↓
+ALB
+↓
+Kubernetes Services
+
+DNS Architektur
+
+- Route53 Hosted Zone verwaltet Projektdomain
+- Alias Record zeigt auf CloudFront Distribution
+
+Öffentliche Domain:
+
+cloudy.cloudhelden-projekte.com
+
+HTTPS Architektur
+
+- Zwei ACM Zertifikate erforderlich:
+
+ALB Zertifikat:
+Region: eu-central-1
+
+CloudFront Zertifikat:
+Region: us-east-1
 
 Health Checks
 
