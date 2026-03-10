@@ -1,6 +1,16 @@
 # =========================================================
 # GitHub Actions CI/CD Pipeline
 # Deploy Backend + Frontend auf AWS EKS
+#
+# WICHTIG:
+# Diese Pipeline baut Docker Images mit Git SHA Tags
+# und ersetzt diese automatisch in den Kubernetes
+# Manifests bevor deployt wird.
+#
+# Dadurch wird sichergestellt:
+# - jeder Commit erzeugt ein neues Image
+# - Kubernetes zieht automatisch das neue Image
+# - kein manuelles Editieren der YAML nötig
 # =========================================================
 
 name: Deploy to EKS
@@ -51,7 +61,7 @@ jobs:
 
       # -----------------------------------------------------
       # Backend Unit Tests ausführen
-      # Build bricht ab wenn Tests fehlschlagen
+      # Pipeline stoppt bei Testfehlern
       # -----------------------------------------------------
       - name: Run backend tests
         run: |
@@ -113,8 +123,21 @@ jobs:
           --region $AWS_REGION
 
       # -----------------------------------------------------
-      # Kubernetes Deployment aktualisieren
-      # (zieht automatisch neue Image Tags)
+      # IMAGE TAGS IN MANIFEST ERSETZEN
+      #
+      # Hier wird das Git SHA Image automatisch
+      # in die Kubernetes YAML Dateien geschrieben.
+      #
+      # Dadurch wird garantiert, dass Kubernetes
+      # das neue Image deployt.
+      # -----------------------------------------------------
+      - name: Update Kubernetes image tags
+        run: |
+          sed -i "s|$ECR_BACKEND:.*|$ECR_BACKEND:${{ github.sha }}|g" k8s/backend-deployment.yaml
+          sed -i "s|$ECR_FRONTEND:.*|$ECR_FRONTEND:${{ github.sha }}|g" k8s/frontend-deployment.yaml
+
+      # -----------------------------------------------------
+      # Deployment auf Kubernetes Cluster
       # -----------------------------------------------------
       - name: Deploy to Kubernetes
         run: |
@@ -130,7 +153,9 @@ jobs:
 
       # -----------------------------------------------------
       # CloudFront Cache Invalidation
-      # Verhindert alte JS / HTML aus CDN Cache
+      #
+      # Entfernt alte Dateien aus dem CDN Cache,
+      # damit neue JS/HTML sofort ausgeliefert werden.
       # -----------------------------------------------------
       - name: Invalidate CloudFront cache
         run: |
