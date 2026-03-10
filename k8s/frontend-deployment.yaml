@@ -1,15 +1,24 @@
+# ============================================================
 # Kubernetes Deployment für das Frontend
-# Startet einen nginx Pod, der die statischen Frontend-Dateien ausliefert.
+#
+# Dieses Deployment startet einen nginx Container,
+# der die statischen Frontend Dateien ausliefert.
+#
+# Das Image wird über die CI/CD Pipeline aktualisiert.
+# Die Pipeline setzt automatisch das neue Image mit Git SHA.
+# ============================================================
 
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: frontend
   labels:
     app: frontend
 
 spec:
-  # Laut Architekturentscheidung nur eine Replica
+  # Laut Projektarchitektur nur eine Replica
+  # (Dozentenvorgabe / Kostenkontrolle)
   replicas: 1
 
   selector:
@@ -23,21 +32,25 @@ spec:
 
     spec:
       containers:
-        - name:
-            frontend
+        # Container Definition für das Frontend
+        - name: frontend
 
-            # Frontend Image aus AWS ECR
+          # Default Image aus AWS ECR
+          # Dieses Image dient nur als Initialwert.
+          # Die GitHub Actions Pipeline ersetzt dieses
+          # Image automatisch mit einem neuen SHA Tag.
           image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend:5809c5d
 
           # nginx läuft im Container auf Port 80
           ports:
             - containerPort: 80
 
-          # Ressourcenlimits passend für t3.small
+          # Ressourcenlimits passend für t3.small Nodes
           resources:
             requests:
               cpu: "50m"
               memory: "128Mi"
+
             limits:
               cpu: "250m"
               memory: "256Mi"

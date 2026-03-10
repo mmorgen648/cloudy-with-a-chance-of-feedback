@@ -12,6 +12,8 @@ permissions:
 env:
   AWS_REGION: eu-central-1
   CLUSTER_NAME: cloudy-eks
+
+  # ECR Repository URLs
   ECR_BACKEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend
   ECR_FRONTEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend
 
@@ -20,26 +22,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ------------------------------------------------------------
+      # Checkout Repository
+      # ------------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ------------------------------------------------------------
+      # AWS Login über OIDC
+      # GitHub Actions nimmt automatisch die IAM Role an
+      # ------------------------------------------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::038217523163:role/GitHubActionsEKSDeployRole
           aws-region: ${{ env.AWS_REGION }}
 
+      # ------------------------------------------------------------
+      # Backend Tests ausführen
+      # ------------------------------------------------------------
       - name: Run backend tests
         run: |
           cd backend
           chmod +x mvnw
           ./mvnw test
 
+      # ------------------------------------------------------------
+      # Login zu Amazon ECR
+      # ------------------------------------------------------------
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin 038217523163.dkr.ecr.eu-central-1.amazonaws.com
 
+      # ------------------------------------------------------------
+      # Backend Image bauen
+      # linux/amd64 ist notwendig wegen Mac M-Series ARM
+      # ------------------------------------------------------------
       - name: Build backend image
         run: |
           docker build \
@@ -47,10 +66,16 @@ jobs:
           -t $ECR_BACKEND:${{ github.sha }} \
           ./backend
 
+      # ------------------------------------------------------------
+      # Backend Image nach ECR pushen
+      # ------------------------------------------------------------
       - name: Push backend image
         run: |
           docker push $ECR_BACKEND:${{ github.sha }}
 
+      # ------------------------------------------------------------
+      # Frontend Image bauen
+      # ------------------------------------------------------------
       - name: Build frontend image
         run: |
           docker build \
@@ -58,20 +83,43 @@ jobs:
           -t $ECR_FRONTEND:${{ github.sha }} \
           ./frontend
 
+      # ------------------------------------------------------------
+      # Frontend Image nach ECR pushen
+      # ------------------------------------------------------------
       - name: Push frontend image
         run: |
           docker push $ECR_FRONTEND:${{ github.sha }}
 
+      # ------------------------------------------------------------
+      # kubeconfig für EKS aktualisieren
+      # ------------------------------------------------------------
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
           --name $CLUSTER_NAME \
           --region $AWS_REGION
 
-      - name: Deploy to Kubernetes
+      # ------------------------------------------------------------
+      # Kubernetes Manifeste anwenden
+      # ------------------------------------------------------------
+      - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f k8s/
 
+      # ------------------------------------------------------------
+      # Deployment Images auf neuen SHA setzen
+      #
+      # Dadurch startet Kubernetes automatisch neue Pods
+      # mit dem Image, das die Pipeline gerade gebaut hat.
+      # ------------------------------------------------------------
+      - name: Update deployment images
+        run: |
+          kubectl set image deployment/backend backend=$ECR_BACKEND:${{ github.sha }}
+          kubectl set image deployment/frontend frontend=$ECR_FRONTEND:${{ github.sha }}
+
+      # ------------------------------------------------------------
+      # Rollout überwachen
+      # ------------------------------------------------------------
       - name: Check rollout
         run: |
           kubectl rollout status deployment/backend --timeout=120s
