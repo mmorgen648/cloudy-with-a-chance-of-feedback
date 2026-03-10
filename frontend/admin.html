@@ -5,32 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin – Cloudy With A Chance Of Feedback</title>
 
+    <!-- Google Font -->
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Globales Stylesheet -->
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
+    <!-- ============================================================
+         ADMIN PROTECTION
+         Ohne Token darf diese Seite nicht aufgerufen werden
+         ============================================================ -->
     <script>
-      // Admin-Schutz: Ohne Login-Token keine Admin-Seite
       const token = sessionStorage.getItem("id_token");
       if (!token) {
         window.location.href = "login.html";
       }
     </script>
 
+    <!-- ============================================================
+         HEADER
+         ============================================================ -->
     <header class="header">
       <div class="header-inner">
         <img src="assets/logo-clean.png" alt="Cloudy Logo" class="logo" />
 
         <div class="header-title">Cloudy With A Chance Of Feedback</div>
 
-        <a href="index.html" class="nav-button">Startseite</a>
+        <!-- Navigation -->
+        <div style="display: flex; gap: 10px">
+          <!-- Zurück zur Startseite -->
+          <a href="index.html" class="nav-button"> Startseite </a>
+
+          <!-- Logout Button -->
+          <a href="#" class="nav-button" id="logoutButton"> Logout </a>
+        </div>
       </div>
     </header>
 
+    <!-- ============================================================
+         MAIN CONTENT
+         ============================================================ -->
     <main class="main">
       <section class="card">
         <h2>Statistik (letzte 7 Tage)</h2>
@@ -60,5 +79,38 @@
         <button class="primary-button">Aktualisieren</button>
       </section>
     </main>
+
+    <!-- ============================================================
+         LOGOUT SCRIPT
+         ============================================================ -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const logoutButton = document.getElementById("logoutButton");
+
+        if (!logoutButton) return;
+
+        logoutButton.addEventListener("click", (event) => {
+          event.preventDefault();
+
+          // Session löschen
+          sessionStorage.clear();
+
+          const domain =
+            "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
+
+          const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
+
+          // Dynamischer Redirect (funktioniert lokal + CloudFront)
+          const logoutRedirect = window.location.origin + "/index.html";
+
+          const logoutUrl =
+            `https://${domain}/logout` +
+            `?client_id=${encodeURIComponent(clientId)}` +
+            `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
+
+          window.location.href = logoutUrl;
+        });
+      });
+    </script>
   </body>
 </html>
