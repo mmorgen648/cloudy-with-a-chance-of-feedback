@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
+
+data:
+  mapRoles: |
+    - rolearn: arn:aws:iam::038217523163:role/cloudy-eks-node-role
+      username: system:node:{{EC2PrivateDNSName}}
+      groups:
+        - system:bootstrappers
+        - system:nodes
+
+    - rolearn: arn:aws:iam::038217523163:role/GitHubActionsEKSDeployRole
+      username: github-actions
+      groups:
+        - system:masters

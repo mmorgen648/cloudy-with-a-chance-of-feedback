@@ -1,6 +1,6 @@
 const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
 const domain = "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
-const redirectUri = "http://localhost:8080/login.html";
+const redirectUri = window.location.origin + "/login.html";
 
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
