@@ -43,7 +43,11 @@
       <section class="card">
         <h2>Feedback abgeben</h2>
 
-        <form class="form">
+        <!-- ============================================================
+             FEEDBACK FORM
+             Wichtig: ID hinzugefügt damit JS das Formular abfangen kann
+             ============================================================ -->
+        <form class="form" id="feedbackForm">
           <label for="feedback">Dein Feedback</label>
           <textarea id="feedback" rows="5"></textarea>
 
@@ -61,27 +65,18 @@
       // ============================================================
       // Auth-Handling für die Startseite
       //
-      // Verhalten:
-      //
       // NICHT eingeloggt:
       // [Admin Login]
       //
       // Eingeloggt:
       // [Admin] [Logout]
-      //
-      // Token wird im Browser in sessionStorage gespeichert.
       // ============================================================
 
       document.addEventListener("DOMContentLoaded", () => {
         const authButton = document.getElementById("authButton");
         const token = sessionStorage.getItem("id_token");
 
-        // Sicherheit: Falls Button im HTML fehlt → Script abbrechen
         if (!authButton) return;
-
-        // ============================================================
-        // NICHT EINGELOGGT
-        // ============================================================
 
         if (!token) {
           authButton.textContent = "Admin Login";
@@ -89,15 +84,9 @@
           return;
         }
 
-        // ============================================================
-        // EINGELOGGT
-        // ============================================================
-
-        // Admin Button anzeigen
         authButton.textContent = "Admin";
         authButton.href = "admin.html";
 
-        // Logout Button dynamisch erstellen
         const logoutButton = document.createElement("a");
         logoutButton.textContent = "Logout";
         logoutButton.href = "#";
@@ -106,19 +95,12 @@
         logoutButton.addEventListener("click", (event) => {
           event.preventDefault();
 
-          // ------------------------------------------------------------
-          // 1. Browser Session löschen
-          // ------------------------------------------------------------
           sessionStorage.clear();
 
-          // ------------------------------------------------------------
-          // 2. Cognito Logout vorbereiten
-          // ------------------------------------------------------------
           const domain =
             "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
           const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
 
-          // Dynamischer Redirect (funktioniert lokal und CloudFront)
           const logoutRedirect = window.location.origin + "/index.html";
 
           const logoutUrl =
@@ -126,14 +108,52 @@
             `?client_id=${encodeURIComponent(clientId)}` +
             `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
 
-          // ------------------------------------------------------------
-          // 3. Cognito Logout ausführen
-          // ------------------------------------------------------------
           window.location.href = logoutUrl;
         });
 
-        // Logout Button neben Admin Button einfügen
         authButton.parentNode.appendChild(logoutButton);
+      });
+
+      // ============================================================
+      // FEEDBACK FORM SUBMIT
+      //
+      // Sendet Feedback an Backend API
+      // POST /api/feedback
+      //
+      // Flow:
+      // Browser → CloudFront → ALB → EKS → Spring Boot → RDS
+      // ============================================================
+
+      const form = document.getElementById("feedbackForm");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const message = document.getElementById("feedback").value;
+
+        try {
+          const response = await fetch("/api/feedback", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message: message,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("API Fehler");
+          }
+
+          alert("Feedback erfolgreich gespeichert!");
+
+          // Feld leeren
+          document.getElementById("feedback").value = "";
+        } catch (error) {
+          console.error("Feedback Fehler:", error);
+          alert("Fehler beim Senden des Feedbacks");
+        }
       });
     </script>
   </body>
