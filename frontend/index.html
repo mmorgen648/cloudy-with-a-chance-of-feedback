@@ -5,13 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cloudy With A Chance Of Feedback</title>
 
-    <!-- Google Font -->
+    <!-- ============================================================
+         GOOGLE FONT
+         ============================================================ -->
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Globales Stylesheet -->
+    <!-- ============================================================
+         GLOBAL STYLESHEET
+         ============================================================ -->
     <link rel="stylesheet" href="style.css" />
   </head>
 
@@ -21,11 +25,13 @@
          ============================================================ -->
     <header class="header">
       <div class="header-inner">
+        <!-- Logo -->
         <img src="assets/logo-clean.png" alt="Cloudy Logo" class="logo" />
 
+        <!-- Titel -->
         <div class="header-title">Cloudy With A Chance Of Feedback</div>
 
-        <!-- Login / Logout Button -->
+        <!-- Auth Button (Login oder Admin) -->
         <a href="login.html" class="nav-button" id="authButton">Admin Login</a>
       </div>
     </header>
@@ -52,36 +58,67 @@
          AUTH SCRIPT
          ============================================================ -->
     <script>
-      // Logout-Handling für die Startseite:
-      // - Wenn Token vorhanden: Button wird zu "Logout"
-      // - Klick auf "Logout": Session löschen + Cognito Logout + Redirect zurück
+      // ============================================================
+      // Auth-Handling für die Startseite
+      //
+      // Verhalten:
+      //
+      // NICHT eingeloggt:
+      // [Admin Login]
+      //
+      // Eingeloggt:
+      // [Admin] [Logout]
+      //
+      // Token wird im Browser in sessionStorage gespeichert.
+      // ============================================================
 
       document.addEventListener("DOMContentLoaded", () => {
         const authButton = document.getElementById("authButton");
         const token = sessionStorage.getItem("id_token");
 
-        // Wenn Button fehlt: nichts tun (robust gegen HTML-Änderungen)
+        // Sicherheit: Falls Button im HTML fehlt → Script abbrechen
         if (!authButton) return;
 
-        // Wenn kein Token vorhanden: Button bleibt "Admin Login"
-        if (!token) return;
+        // ============================================================
+        // NICHT EINGELOGGT
+        // ============================================================
 
-        // Token vorhanden → Logout aktivieren
-        authButton.textContent = "Logout";
-        authButton.href = "#";
+        if (!token) {
+          authButton.textContent = "Admin Login";
+          authButton.href = "login.html";
+          return;
+        }
 
-        authButton.addEventListener("click", (event) => {
+        // ============================================================
+        // EINGELOGGT
+        // ============================================================
+
+        // Admin Button anzeigen
+        authButton.textContent = "Admin";
+        authButton.href = "admin.html";
+
+        // Logout Button dynamisch erstellen
+        const logoutButton = document.createElement("a");
+        logoutButton.textContent = "Logout";
+        logoutButton.href = "#";
+        logoutButton.className = "nav-button";
+
+        logoutButton.addEventListener("click", (event) => {
           event.preventDefault();
 
-          // 1) Browser-Session löschen
+          // ------------------------------------------------------------
+          // 1. Browser Session löschen
+          // ------------------------------------------------------------
           sessionStorage.clear();
 
-          // 2) Cognito Logout vorbereiten
+          // ------------------------------------------------------------
+          // 2. Cognito Logout vorbereiten
+          // ------------------------------------------------------------
           const domain =
             "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
           const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
 
-          // Dynamischer Redirect (funktioniert lokal und über CloudFront)
+          // Dynamischer Redirect (funktioniert lokal und CloudFront)
           const logoutRedirect = window.location.origin + "/index.html";
 
           const logoutUrl =
@@ -89,9 +126,14 @@
             `?client_id=${encodeURIComponent(clientId)}` +
             `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
 
-          // 3) Cognito Logout aufrufen
+          // ------------------------------------------------------------
+          // 3. Cognito Logout ausführen
+          // ------------------------------------------------------------
           window.location.href = logoutUrl;
         });
+
+        // Logout Button neben Admin Button einfügen
+        authButton.parentNode.appendChild(logoutButton);
       });
     </script>
   </body>
