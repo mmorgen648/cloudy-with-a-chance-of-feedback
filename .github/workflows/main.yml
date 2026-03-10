@@ -1,64 +1,77 @@
+# =========================================================
+# GitHub Actions CI/CD Pipeline
+# Deploy Backend + Frontend auf AWS EKS
+# =========================================================
+
 name: Deploy to EKS
 
+# Pipeline wird bei jedem Push auf main ausgelöst
 on:
   push:
     branches:
       - main
 
+# Rechte für OIDC Login zu AWS
 permissions:
   id-token: write
   contents: read
 
+# Globale Variablen
 env:
   AWS_REGION: eu-central-1
   CLUSTER_NAME: cloudy-eks
 
-  # ECR Repository URLs
+  # ECR Repositories
   ECR_BACKEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend
   ECR_FRONTEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend
+
+  # CloudFront Distribution
+  CLOUDFRONT_DISTRIBUTION: EEFDFZ6ZWF6FL
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # ------------------------------------------------------------
-      # Checkout Repository
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # Repository auschecken
+      # -----------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ------------------------------------------------------------
-      # AWS Login über OIDC
-      # GitHub Actions nimmt automatisch die IAM Role an
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # AWS Login über GitHub OIDC Role
+      # Keine statischen AWS Keys nötig
+      # -----------------------------------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::038217523163:role/GitHubActionsEKSDeployRole
           aws-region: ${{ env.AWS_REGION }}
 
-      # ------------------------------------------------------------
-      # Backend Tests ausführen
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # Backend Unit Tests ausführen
+      # Build bricht ab wenn Tests fehlschlagen
+      # -----------------------------------------------------
       - name: Run backend tests
         run: |
           cd backend
           chmod +x mvnw
           ./mvnw test
 
-      # ------------------------------------------------------------
-      # Login zu Amazon ECR
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # Login in Amazon ECR Container Registry
+      # -----------------------------------------------------
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin 038217523163.dkr.ecr.eu-central-1.amazonaws.com
 
-      # ------------------------------------------------------------
-      # Backend Image bauen
-      # linux/amd64 ist notwendig wegen Mac M-Series ARM
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # Backend Docker Image bauen
+      # Wichtig: linux/amd64 wegen EKS Nodes
+      # Tag = Git Commit SHA
+      # -----------------------------------------------------
       - name: Build backend image
         run: |
           docker build \
@@ -66,16 +79,16 @@ jobs:
           -t $ECR_BACKEND:${{ github.sha }} \
           ./backend
 
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
       # Backend Image nach ECR pushen
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
       - name: Push backend image
         run: |
           docker push $ECR_BACKEND:${{ github.sha }}
 
-      # ------------------------------------------------------------
-      # Frontend Image bauen
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # Frontend Docker Image bauen
+      # -----------------------------------------------------
       - name: Build frontend image
         run: |
           docker build \
@@ -83,44 +96,44 @@ jobs:
           -t $ECR_FRONTEND:${{ github.sha }} \
           ./frontend
 
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
       # Frontend Image nach ECR pushen
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
       - name: Push frontend image
         run: |
           docker push $ECR_FRONTEND:${{ github.sha }}
 
-      # ------------------------------------------------------------
-      # kubeconfig für EKS aktualisieren
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # kubeconfig für Zugriff auf EKS aktualisieren
+      # -----------------------------------------------------
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
           --name $CLUSTER_NAME \
           --region $AWS_REGION
 
-      # ------------------------------------------------------------
-      # Kubernetes Manifeste anwenden
-      # ------------------------------------------------------------
-      - name: Apply Kubernetes manifests
+      # -----------------------------------------------------
+      # Kubernetes Deployment aktualisieren
+      # (zieht automatisch neue Image Tags)
+      # -----------------------------------------------------
+      - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/
 
-      # ------------------------------------------------------------
-      # Deployment Images auf neuen SHA setzen
-      #
-      # Dadurch startet Kubernetes automatisch neue Pods
-      # mit dem Image, das die Pipeline gerade gebaut hat.
-      # ------------------------------------------------------------
-      - name: Update deployment images
-        run: |
-          kubectl set image deployment/backend backend=$ECR_BACKEND:${{ github.sha }}
-          kubectl set image deployment/frontend frontend=$ECR_FRONTEND:${{ github.sha }}
-
-      # ------------------------------------------------------------
-      # Rollout überwachen
-      # ------------------------------------------------------------
+      # -----------------------------------------------------
+      # Warten bis Pods erfolgreich gestartet sind
+      # -----------------------------------------------------
       - name: Check rollout
         run: |
           kubectl rollout status deployment/backend --timeout=120s
           kubectl rollout status deployment/frontend --timeout=120s
+
+      # -----------------------------------------------------
+      # CloudFront Cache Invalidation
+      # Verhindert alte JS / HTML aus CDN Cache
+      # -----------------------------------------------------
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+          --distribution-id $CLOUDFRONT_DISTRIBUTION \
+          --paths "/*"
