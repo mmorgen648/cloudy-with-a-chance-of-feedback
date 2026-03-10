@@ -888,283 +888,456 @@ Ergebnis
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 18 – Systemtests, Debugging und Kostenkontrolle
+------------------------------------------------------------
+
+Ziel:
+System vollständig testen, Fehler identifizieren und beheben.
+Kostenkontrolle nach Arbeitstag sicherstellen.
+
+Frontend / Auth Debugging
+
+- CloudFront lieferte weiterhin alte login.js Version aus
+- Ursache: Browser Cache + CloudFront Cache Kombination
+- Lösung:
+  - CloudFront Invalidation durchgeführt
+  - Browser Hard Reload (Cache leeren)
+  - DevTools → Disable Cache aktiviert
+
+Ergebnis:
+Neue login.js Version wird korrekt ausgeliefert.
+
+Redirect Problem behoben
+
+Vorher:
+const redirectUri = "http://localhost:8080/login.html";
+
+Problem:
+Login Redirect funktionierte nur lokal, nicht über CloudFront Domain.
+
+Fix:
+const redirectUri = window.location.origin + "/login.html";
+
+Ergebnis:
+Login funktioniert sowohl lokal als auch über:
+https://cloudy.cloudhelden-projekte.com
+
+Frontend Auth Verhalten geprüft
+
+Startseite:
+
+Nicht eingeloggt:
+- Button zeigt "Admin Login"
+
+Eingeloggt:
+- Button zeigt "Admin"
+- zusätzlicher "Logout" Button wird dynamisch erstellt
+
+Navigation:
+
+Admin → Startseite → Admin funktioniert korrekt.
+
+Logout Verhalten getestet:
+
+- Logout von Admin Seite funktioniert
+- Logout von Startseite funktioniert
+- SessionStorage wird korrekt gelöscht
+- Cognito Logout Redirect funktioniert
+
+Backend Debugging begonnen
+
+API Test mit curl durchgeführt:
+
+GET
+/api/feedback
+
+Ergebnis:
+401 Unauthorized
+
+Nach Login Test mit Bearer Token:
+
+Ergebnis:
+500 Internal Server Error
+
+Analyse:
+
+- Backend versucht Feedback Daten zu laden
+- RDS Tabelle existiert wahrscheinlich noch nicht
+- Datenbank Schema muss noch erstellt werden
+
+Frontend Feedback Formular getestet
+
+Feedback über Formular abgesendet.
+
+Ergebnis:
+
+- Keine Anzeige im Admin Dashboard
+- Aktualisieren Button zeigt keine Daten
+
+Analyse:
+
+Mögliche Ursachen:
+
+- Datenbank Tabelle fehlt
+- Backend Endpoint liefert Fehler
+- Statistik Endpoint eventuell noch nicht implementiert
+
+Weitere Tests geplant für nächsten Arbeitstag.
+
+Kostenkontrolle (Ende Arbeitstag)
+
+RDS:
+
+- RDS Instanz gestoppt um Kosten zu vermeiden
+
+EKS:
+
+Node Group über Terraform auf 0 skaliert.
+
+Datei:
+terraform/modules/eks/main.tf
+
+Änderung:
+desired_size = 0
+
+Terraform ausgeführt:
+
+terraform plan
+terraform apply
+
+Ergebnis:
+
+- Worker Nodes werden terminiert
+- kubectl get nodes zeigt nach kurzer Zeit keine Nodes mehr
+
+Kostenstatus nach Arbeitstag:
+
+- RDS: gestoppt
+- EKS Nodes: 0
+- Nur EKS Control Plane läuft (~$0.10/h)
+
+Status:
+System grundsätzlich funktionsfähig, jedoch Backend API noch nicht vollständig getestet.
+Weitere Debugging- und Systemtests geplant für nächsten Arbeitstag.
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
-✔ Backend läuft lokal stabil
-✔ ML-Service vollständig integriert
-✔ Daten werden korrekt analysiert und gespeichert
-✔ Architektur sauber (Controller → Service → AWS → DB)
+Projekt:
+CloudyWithAChanceOfFeedback
 
-✔ Terraform Bootstrap abgeschlossen
-✔ Remote State in S3 aktiv
-✔ DynamoDB Locking aktiv
-✔ Enterprise-konforme Terraform-Struktur aufgebaut
+Region:
+eu-central-1 (Hauptregion)
+us-east-1 (ACM für CloudFront)
 
-✔ Network Layer vollständig implementiert
-✔ Cognito OAuth Flow vollständig validiert
-✔ JWT Validation + Rollenprüfung produktionsreif
+Architektur:
+Cloud-native Anwendung auf AWS mit Kubernetes (EKS)
 
-✔ Backend erfolgreich containerisiert
-✔ SHA-basierte Docker-Versionierung etabliert (kein :latest)
-✔ ECR angebunden und versioniertes Image gespeichert
-✔ ECR Lifecycle Policy aktiv (Image Cleanup)
+Infrastruktur (Terraform):
+- VPC mit Public und Private Subnets über 2 Availability Zones
+- Internet Gateway und Routing eingerichtet
+- Security Groups für ALB, EKS Nodes und RDS
+- EKS Cluster mit Node Group
+- RDS PostgreSQL Datenbank (db.t3.micro) in Private Subnet
+- CloudFront Distribution vor dem ALB
+- ACM Zertifikat in us-east-1 für CloudFront
+- Route 53 Domain: cloudy.cloudhelden-projekte.com
+- Remote Terraform State in S3
+- State Locking über DynamoDB
 
-✔ EKS Cluster produktionsbereit erstellt
-✔ Managed Node Group konfiguriert (min=0 / max=4)
-✔ OIDC Provider + IRSA korrekt eingerichtet
-✔ AWS Load Balancer Controller installiert
-✔ Kubernetes Ingress über AWS ALB implementiert
-✔ ALB erstellt automatisch Application Load Balancer
-✔ ALB Routing funktioniert:
-  /      → Frontend
-  /api   → Backend
+Kubernetes (EKS):
+- Frontend Deployment (Nginx)
+- Backend Deployment (Spring Boot)
+- ClusterIP Services für interne Kommunikation
+- Ingress (AWS Load Balancer Controller → ALB)
+- HorizontalPodAutoscaler für Backend
+- Liveness und Readiness Probes konfiguriert
+- Resource Requests und Limits definiert
 
-✔ Backend + Frontend erfolgreich auf EKS deployed
-✔ Pods laufen stabil im Cluster
-✔ Kubernetes Liveness / Readiness Probes funktionieren
-✔ Backend Health Check Problem (401) analysiert und behoben
-✔ ALB Health Check Pfad korrekt konfiguriert (/actuator/health)
+Container / Registry:
+- Docker Images für Frontend und Backend
+- Images werden in Amazon ECR gespeichert
+- Image Tags basieren auf Git Commit SHA
 
-✔ AWS Target Groups validiert
-✔ Frontend Target → healthy
-✔ Backend Target → healthy
+CI/CD Pipeline (GitHub Actions):
+Pipeline bei jedem Push auf main:
 
-✔ Öffentliche Anwendung über ALB erreichbar
+1. Unit Tests ausführen
+2. Docker Images bauen
+3. Images in ECR pushen
+4. Kubernetes Deployment auf EKS aktualisieren
+5. Rollout Status prüfen
+6. CloudFront Cache Invalidation durchführen
 
-✔ CloudFront Distribution vor dem ALB implementiert
-✔ Globales CDN über CloudFront aktiv
-✔ HTTPS vollständig integriert
-✔ ACM Zertifikate validiert:
-  - ALB Zertifikat (eu-central-1)
-  - CloudFront Zertifikat (us-east-1)
+Authentifizierung:
+- AWS Cognito User Pool eingerichtet
+- Admin Gruppe erstellt
+- JWT Token Validierung im Backend aktiviert
+- Frontend Login über Cognito Hosted UI
 
-✔ Route53 DNS Routing aktiv:
-  cloudy.cloudhelden-projekte.com → CloudFront Distribution
+Frontend:
+- Öffentliche Startseite mit Feedback Formular
+- Admin Login Seite
+- Admin Dashboard
+- Logout Funktion über Cognito
+- Dynamische Navigation (Login / Admin / Logout)
+- Redirect funktioniert lokal und über CloudFront Domain
 
-✔ CloudFront → ALB Origin Verbindung funktioniert
-✔ Host Header Forwarding korrekt konfiguriert
-✔ API Routing über CloudFront korrekt konfiguriert:
-  /api → CloudFront → ALB → Backend
+Backend:
+- Spring Boot REST API
+- Endpoint zum Einreichen von Feedback
+- Endpoint zum Abrufen von Feedback
+- Integration mit Amazon Comprehend
+  - Sentiment Analyse
+  - Key Phrase Extraktion
 
-✔ CloudFront Cache Behavior für API deaktiviert
-✔ Ordered Cache Behavior für /api/* implementiert
+ML Integration:
+- Amazon Comprehend detectSentiment()
+- Amazon Comprehend detectKeyPhrases()
+- Ergebnisse werden im Feedback Datensatz gespeichert
 
-✔ RDS PostgreSQL in Private Subnets implementiert
-✔ Snapshot-Strategie mit stabilem Random-Suffix umgesetzt
-✔ Infrastruktur vollständig datenbankfähig
+CloudFront:
+- CDN vor dem ALB
+- HTTPS über ACM Zertifikat
+- API Pfade nicht gecached
 
-✔ Frontend Grundstruktur implementiert (Public UI + Admin UI)
-✔ Design-System definiert und dokumentiert
-✔ login.html + login.js implementiert
-✔ Cognito Hosted Login integriert
-✔ Authorization Code Flow erfolgreich getestet
-✔ Token Handling im Browser implementiert
-✔ Admin-Seite geschützt
-✔ Logout Flow implementiert
+Aktueller Teststatus:
 
-✔ Frontend Docker Container erfolgreich gebaut
-✔ Frontend Image mit SHA Tag in ECR gespeichert
+Login / Auth:
+- Cognito Login funktioniert
+- Logout funktioniert
+- Redirect funktioniert lokal und über CloudFront
 
-✔ Kubernetes Manifeste vollständig implementiert
-✔ Backend Deployment mit Actuator Health Checks
-✔ Kubernetes Secrets für Datenbankzugriff vorbereitet
-✔ AWS ALB Ingress Routing definiert
-✔ HorizontalPodAutoscaler vorbereitet
+Frontend:
+- Startseite lädt korrekt
+- Navigation funktioniert
+- Admin Dashboard erreichbar
 
-✔ CI/CD Pipeline über GitHub Actions implementiert
-✔ GitHub OIDC Integration für AWS eingerichtet
-✔ IAM Role für GitHub Actions erstellt
-✔ ECR Push via Pipeline erfolgreich
-✔ Deployment auf EKS via Pipeline erfolgreich
-✔ kubectl rollout status Prüfung integriert
+Backend:
+- API erreichbar
+- Authentifizierte Requests funktionieren
+- Datenbankzugriff aktuell noch in Debugging
 
-✔ Deployment Pipeline erfolgreich getestet
-✔ Backend + Frontend Pods laufen nach Pipeline Deployment
+Feedback System:
+- Formular sendet Requests an Backend
+- Speicherung und Statistik werden aktuell getestet
 
-✔ Infrastruktur kostenoptimiert beendet
-✔ EKS Node Group auf 0 gesetzt
-✔ RDS Instanz gestoppt
+Kostenstatus:
+
+RDS:
+- Instanz gestoppt
+
+EKS:
+- Node Group auf desired_size = 0 skaliert (Terraform)
+
+Aktive Kosten aktuell:
+- nur EKS Control Plane (~$0.10/h)
 
 Projektphase:
-Woche 4 – CloudFront + HTTPS + DNS (Integration abgeschlossen)
+Woche 4 – Systemtests, Debugging und Vorbereitung der Präsentation
 
-Offener Schritt:
-Backend ↔ RDS Verbindung im EKS Cluster testen und stabilisieren
-
-Nächste Phase:
-End-to-End Systemtests (Frontend → CloudFront → ALB → Backend → RDS)
+Nächste Schritte:
+- Backend Datenbank Schema prüfen
+- Feedback Speicherung testen
+- Statistik Endpoint implementieren / testen
+- Admin Dashboard vollständig testen
+- Vollständige Systemtests durchführen
+- Demo Daten vorbereiten
 
 ------------------------------------------------------------
 OPEN TECH TASKS
 ------------------------------------------------------------
 
-Backend / Datenbank Integration
+Backend
 
-- RDS Instanz starten
-- Backend ↔ RDS Verbindung im EKS Cluster testen
-- CrashLoopBackOff des Backend Pods analysieren und beheben
-- Datenbankverbindung über Kubernetes Secrets validieren
-- End-to-End Test durchführen:
-  CloudFront → ALB → Backend → RDS
+- Datenbank Schema prüfen / erstellen
+  Tabelle "feedback" muss existieren
 
-Frontend / Backend Integration
+  Erwartetes Schema:
+  feedback(
+    id,
+    text,
+    created_at,
+    sentiment,
+    confidence_json,
+    key_phrases_json
+  )
 
-- Feedback Formular mit Backend API verbinden
+- JPA Konfiguration prüfen
+  sicherstellen dass Hibernate Tabellen automatisch erstellen kann
+  (spring.jpa.hibernate.ddl-auto=update)
+
+- Feedback Speicherung testen
+  POST /api/feedback muss Daten korrekt in RDS speichern
+
+- Feedback Abruf testen
+  GET /api/feedback muss gespeicherte Daten zurückgeben
+
+- Statistik Endpoint implementieren
+  GET /api/feedback/stats
+
+  Funktion:
+  Statistik der letzten 7 Tage
+
+  Erwartete Rückgabe:
+  - positive
+  - negative
+  - neutral
+  - mixed
+
+
+Frontend
+
+- Feedback Formular vollständig testen
+  prüfen ob Request korrekt an Backend gesendet wird
+
+- Feldmapping prüfen
+  Frontend sendet aktuell "message"
+  Backend erwartet "text"
+
+- Admin Dashboard Datenanzeige testen
+  Feedback Liste anzeigen
+
+- Aktualisieren Button im Admin Dashboard testen
+  muss neue Daten vom Backend laden
+
+
+Systemtests
+
+- End-to-End Test durchführen
+  Browser → CloudFront → ALB → Backend → RDS
+
+- API Tests mit curl durchführen
   POST /api/feedback
+  GET /api/feedback
+  GET /api/feedback/stats
 
-- Feedback Submission über Public Domain testen
+- Authentifizierung testen
+  Admin Dashboard nur mit gültigem Cognito Token erreichbar
 
-Cognito / Auth Integration
 
-- Cognito Callback URLs für CloudFront Domain ergänzen
-- Login über öffentliche Domain testen
-- Token Handling über Public Domain validieren
+CI/CD
 
-Kubernetes / Infrastruktur
+- Pipeline Run nach Änderungen prüfen
+  Test → Build → ECR Push → Deploy → Rollout
 
-- HorizontalPodAutoscaler im Cluster aktiv testen
-- Skalierung des Backend Pods validieren
-- Ressourcenlimits im Cluster beobachten
+- Kubernetes Deployment prüfen
+  sicherstellen dass neue Images mit Commit SHA laufen
 
-CI/CD Pipeline Erweiterung
+- Pod Status prüfen
+  kubectl get pods
 
-- Pipeline um Rollout Monitoring erweitern
-- Pipeline Logging verbessern (Debugbarkeit)
+- Image Version prüfen
+  kubectl describe deployment frontend
+  kubectl describe deployment backend
 
-========================================
+
+Präsentationsvorbereitung
+
+- vollständige Systemtests durchführen
+- Demo Daten erstellen (10–15 Feedback Beispiele)
+- Admin Dashboard mit realistischen Daten testen
+- Präsentations-Demo vorbereiten
+
+------------------------------------------------------------
 DOKU-MERKLISTE (für Woche 4)
-========================================
-- AWS Profil: cloudy
-- AWS Region: eu-central-1
-- AWS Account-ID: 038217523163
+------------------------------------------------------------
 
-Architekturentscheidungen
+README.md
 
-- Kubernetes Plattform: AWS EKS (Managed Kubernetes)
-- Container Registry: AWS ECR
-- Deployment Strategie: Git Commit SHA Versionierung (kein :latest)
-- Infrastructure as Code: Terraform (modularisiert)
+- Projektbeschreibung ergänzen
+- Architekturübersicht der Anwendung erklären
+- verwendete AWS Services dokumentieren
+- Setup Anleitung hinzufügen:
+  - Voraussetzungen
+  - lokale Entwicklung
+  - Deployment Ablauf
 
-Terraform
+ARCHITECTURE.md
 
-- Remote State: S3 + Versionierung
-- State Locking: DynamoDB
-- Terraform Module Struktur:
-  - modules/vpc
-  - modules/security-groups
-  - modules/eks
-  - modules/rds
-  - modules/alb-controller
-  - modules/cloudfront
+- Architekturdiagramm erstellen
+- folgende Komponenten darstellen:
 
-EKS Architektur
+  Benutzer
+  ↓
+  CloudFront
+  ↓
+  ALB (AWS Load Balancer Controller / Ingress)
+  ↓
+  EKS Cluster
+    ├ Frontend Pod (Nginx)
+    └ Backend Pod (Spring Boot)
+  ↓
+  RDS PostgreSQL
 
-- Instance Type: t3.small (Dozentenvorgabe)
-- Genau 1 Node während Entwicklung
-- Node Group: min=0 / desired=1 / max=4
-- Worker Nodes laufen in Public Subnets (kein NAT Gateway)
-- Kostenkontrolle: Node Group wird bei Pause auf 0 gesetzt
-- Bei längerer Inaktivität: terraform destroy module.eks
+- zusätzliche AWS Services dokumentieren:
 
-Kubernetes Architektur
+  Cognito (Authentication)
+  ECR (Container Registry)
+  Comprehend (Sentiment Analyse)
 
-- Deployment:
-  - backend
-  - frontend
-- Services:
-  - ClusterIP Services für interne Kommunikation
-- Ingress:
-  - AWS Application Load Balancer (ALB)
+Terraform Dokumentation
 
-CloudFront Architektur
+- Modulstruktur erklären:
 
-- CloudFront Distribution vor dem ALB positioniert
-- CloudFront fungiert als globaler CDN Edge Layer
-- Origin: AWS Application Load Balancer (ALB)
+  terraform/
+    modules/
+      vpc/
+      eks/
+      rds/
+      cognito/
+      security-groups/
+      cloudfront/
 
-Request Flow:
+- erklären warum Infrastruktur als Code genutzt wird
+- Terraform State Management erklären (S3 + DynamoDB)
 
-User
-↓
-Route53
-↓
-CloudFront
-↓
-ALB
-↓
-Kubernetes Services
+Kubernetes Dokumentation
 
-DNS Architektur
+- Deployment Struktur erklären
+- Service Typen erklären (ClusterIP)
+- Ingress erklären (ALB Integration)
+- HorizontalPodAutoscaler kurz erläutern
+- Liveness und Readiness Probes erklären
 
-- Route53 Hosted Zone verwaltet Projektdomain
-- Alias Record zeigt auf CloudFront Distribution
+CI/CD Pipeline
 
-Öffentliche Domain:
+- GitHub Actions Workflow erklären
+- Pipeline Schritte dokumentieren:
 
-cloudy.cloudhelden-projekte.com
+  Test
+  Build
+  ECR Push
+  Deploy auf EKS
+  Rollout Status prüfen
+  CloudFront Cache Invalidation
 
-HTTPS Architektur
+AWS ML Service Dokumentation
 
-- Zwei ACM Zertifikate erforderlich:
-
-ALB Zertifikat:
-Region: eu-central-1
-
-CloudFront Zertifikat:
-Region: us-east-1
-
-Health Checks
-
-- Kubernetes Liveness Probe:
-  /actuator/health
-
-- Kubernetes Readiness Probe:
-  /actuator/health
-
-- ALB Health Check:
-  /actuator/health
-
-Problem & Lösung:
-
-- Spring Security blockierte Health Endpoint
-- ALB erhielt HTTP 401
-- Lösung: Health Endpoint öffentlich freigeben
-
-Cognito Auth Architektur
-
-- Cognito User Pool
-- Authorization Code Flow
-- Hosted Login Page
-- JWT Token Validierung im Backend
-- Gruppenbasierte Rollenprüfung (cognito:groups → ROLE_ADMIN)
-
-CI/CD Architektur
-
-- GitHub Actions Pipeline
-- GitHub OIDC → AWS IAM Role
-- Keine statischen AWS Credentials
-- Pipeline Schritte:
-
-1. Unit Tests
-2. Docker Build
-3. Push nach AWS ECR
-4. Deployment auf EKS
-5. kubectl rollout status
+- Amazon Comprehend erklären
+- Sentiment Analyse Funktionsweise beschreiben
+- Key Phrase Extraktion erklären
+- Integration im Backend dokumentieren
 
 Kostenkontrolle
 
-- EKS Node Group → 0 bei Pause
-- RDS Instanz stoppen
-- Terraform Destroy für längere Pausen
-- AWS Budget Alert ($15)
+- erklären warum Ressourcen regelmäßig gestoppt werden
+- Node Group Scaling Strategie dokumentieren
+- RDS Stop / Snapshot Strategie erklären
 
-Snapshot Strategie
+Präsentation vorbereiten
 
-- RDS Final Snapshot aktiviert
-- random_id statt timestamp
-- verhindert Snapshot Namenskonflikte
-- verhindert Terraform Plan Drift
+- Architektur Slide erstellen
+- Terraform Struktur erklären
+- Kubernetes Deployment zeigen
+- CI/CD Pipeline Lauf demonstrieren
+- Live Demo vorbereiten:
+
+  1. Feedback absenden
+  2. Sentiment Analyse zeigen
+  3. Admin Dashboard anzeigen
+  4. Statistik aktualisieren
 
 ========================================
 DESTROY-LOG

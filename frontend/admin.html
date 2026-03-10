@@ -5,23 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin – Cloudy With A Chance Of Feedback</title>
 
-    <!-- Google Font -->
+    <!-- ============================================================
+         GOOGLE FONT
+         ============================================================ -->
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Globales Stylesheet -->
+    <!-- ============================================================
+         GLOBAL STYLESHEET
+         ============================================================ -->
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
     <!-- ============================================================
-         ADMIN PROTECTION
-         Ohne Token darf diese Seite nicht aufgerufen werden
+         ADMIN ACCESS PROTECTION
+         Wenn kein Token vorhanden → Redirect zu Login
          ============================================================ -->
     <script>
       const token = sessionStorage.getItem("id_token");
+
       if (!token) {
         window.location.href = "login.html";
       }
@@ -32,17 +37,16 @@
          ============================================================ -->
     <header class="header">
       <div class="header-inner">
+        <!-- Logo -->
         <img src="assets/logo-clean.png" alt="Cloudy Logo" class="logo" />
 
+        <!-- Titel -->
         <div class="header-title">Cloudy With A Chance Of Feedback</div>
 
         <!-- Navigation -->
-        <div style="display: flex; gap: 10px">
-          <!-- Zurück zur Startseite -->
-          <a href="index.html" class="nav-button"> Startseite </a>
-
-          <!-- Logout Button -->
-          <a href="#" class="nav-button" id="logoutButton"> Logout </a>
+        <div>
+          <a href="index.html" class="nav-button">Startseite</a>
+          <a href="#" class="nav-button" id="logoutButton">Logout</a>
         </div>
       </div>
     </header>
@@ -54,63 +58,109 @@
       <section class="card">
         <h2>Statistik (letzte 7 Tage)</h2>
 
+        <!-- ============================================================
+             FEEDBACK STATISTIK
+             Werte werden dynamisch vom Backend geladen
+             ============================================================ -->
         <div class="stats-grid">
           <div class="stat-box">
             <span>Positive</span>
-            <strong>--</strong>
+            <strong id="positiveCount">--</strong>
           </div>
 
           <div class="stat-box">
             <span>Negative</span>
-            <strong>--</strong>
+            <strong id="negativeCount">--</strong>
           </div>
 
           <div class="stat-box">
             <span>Neutral</span>
-            <strong>--</strong>
+            <strong id="neutralCount">--</strong>
           </div>
 
           <div class="stat-box">
             <span>Mixed</span>
-            <strong>--</strong>
+            <strong id="mixedCount">--</strong>
           </div>
         </div>
 
-        <button class="primary-button">Aktualisieren</button>
+        <button class="primary-button" id="refreshButton">Aktualisieren</button>
       </section>
     </main>
 
     <!-- ============================================================
-         LOGOUT SCRIPT
+         ADMIN SCRIPT
          ============================================================ -->
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const logoutButton = document.getElementById("logoutButton");
+      /* ============================================================
+         LOGOUT
+         ============================================================ */
 
-        if (!logoutButton) return;
+      document.getElementById("logoutButton").addEventListener("click", (e) => {
+        e.preventDefault();
 
-        logoutButton.addEventListener("click", (event) => {
-          event.preventDefault();
+        sessionStorage.clear();
 
-          // Session löschen
-          sessionStorage.clear();
+        const domain =
+          "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
 
-          const domain =
-            "eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com";
+        const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
 
-          const clientId = "5gc47l6rh621jdl9ai7bfli2qv";
+        const logoutRedirect = window.location.origin + "/index.html";
 
-          // Dynamischer Redirect (funktioniert lokal + CloudFront)
-          const logoutRedirect = window.location.origin + "/index.html";
+        const logoutUrl =
+          `https://${domain}/logout` +
+          `?client_id=${encodeURIComponent(clientId)}` +
+          `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
 
-          const logoutUrl =
-            `https://${domain}/logout` +
-            `?client_id=${encodeURIComponent(clientId)}` +
-            `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
-
-          window.location.href = logoutUrl;
-        });
+        window.location.href = logoutUrl;
       });
+
+      /* ============================================================
+         LOAD STATS FROM BACKEND
+         GET /api/feedback/stats
+         ============================================================ */
+
+      async function loadStats() {
+        try {
+          const token = sessionStorage.getItem("id_token");
+
+          const response = await fetch("/api/feedback/stats", {
+            headers: {
+              Authorization: "Bearer " + token,
+            },
+          });
+
+          const data = await response.json();
+
+          document.getElementById("positiveCount").textContent =
+            data.POSITIVE ?? 0;
+
+          document.getElementById("negativeCount").textContent =
+            data.NEGATIVE ?? 0;
+
+          document.getElementById("neutralCount").textContent =
+            data.NEUTRAL ?? 0;
+
+          document.getElementById("mixedCount").textContent = data.MIXED ?? 0;
+        } catch (error) {
+          console.error("Stats Fehler:", error);
+        }
+      }
+
+      /* ============================================================
+         BUTTON HANDLER
+         ============================================================ */
+
+      document
+        .getElementById("refreshButton")
+        .addEventListener("click", loadStats);
+
+      /* ============================================================
+         AUTO LOAD
+         ============================================================ */
+
+      loadStats();
     </script>
   </body>
 </html>
