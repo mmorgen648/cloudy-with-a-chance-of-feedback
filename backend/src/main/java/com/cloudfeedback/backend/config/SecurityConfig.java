@@ -2,8 +2,8 @@ package com.cloudfeedback.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,6 +15,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
+        /**
+         * 1) Actuator – komplett öffentlich
+         */
         @Bean
         @Order(1)
         public SecurityFilterChain actuatorSecurity(HttpSecurity http) throws Exception {
@@ -27,9 +30,27 @@ public class SecurityConfig {
                 return http.build();
         }
 
+        /**
+         * 2) Public Feedback Endpoint – KEIN OAuth2 Filter
+         */
         @Bean
         @Order(2)
-        public SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
+        public SecurityFilterChain publicFeedbackSecurity(HttpSecurity http) throws Exception {
+
+                http
+                                .securityMatcher(HttpMethod.POST, "/api/feedback")
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+                return http.build();
+        }
+
+        /**
+         * 3) Admin API – OAuth2 + Rollenprüfung
+         */
+        @Bean
+        @Order(3)
+        public SecurityFilterChain adminApiSecurity(HttpSecurity http) throws Exception {
 
                 http
                                 .csrf(csrf -> csrf.disable())
@@ -37,17 +58,14 @@ public class SecurityConfig {
 
                                 .authorizeHttpRequests(auth -> auth
 
-                                                // H2 console lokal
+                                                // H2 Console lokal
                                                 .requestMatchers("/h2-console/**").permitAll()
 
-                                                // Öffentliches Feedback senden
-                                                .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
-
-                                                // Admin APIs
+                                                // Admin Endpoints
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback").hasRole("ADMIN")
 
-                                                // alles andere braucht Auth
+                                                // alles andere benötigt Auth
                                                 .anyRequest().authenticated())
 
                                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -57,6 +75,9 @@ public class SecurityConfig {
                 return http.build();
         }
 
+        /**
+         * Cognito Gruppen → Spring Rollen
+         */
         private Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
 
                 JwtGrantedAuthoritiesConverter gac = new JwtGrantedAuthoritiesConverter();
