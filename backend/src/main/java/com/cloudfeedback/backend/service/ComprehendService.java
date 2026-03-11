@@ -16,7 +16,12 @@ import java.util.stream.Collectors;
  * - Ermittelt Sentiment
  * - Extrahiert Key Phrases
  *
- * Region fest: eu-north-1
+ * Wichtig:
+ * - Keine festen Credentials konfigurieren
+ * - AWS SDK nutzt automatisch:
+ * 1. lokale AWS CLI Credentials
+ * 2. Environment Variables
+ * 3. IAM Role (EKS / EC2)
  */
 @Service
 public class ComprehendService {
@@ -24,8 +29,15 @@ public class ComprehendService {
     private final ComprehendClient comprehendClient;
 
     public ComprehendService() {
+
         this.comprehendClient = ComprehendClient.builder()
-                .region(Region.EU_CENTRAL_1) // Comprehend ist in Frankfurt verfügbar
+
+                // Region Frankfurt (Comprehend verfügbar)
+                .region(Region.EU_CENTRAL_1)
+
+                // KEIN CredentialsProvider hier
+                // AWS SDK verwendet automatisch DefaultCredentialsProvider
+
                 .build();
     }
 
@@ -40,7 +52,7 @@ public class ComprehendService {
 
         DetectSentimentRequest request = DetectSentimentRequest.builder()
                 .text(text)
-                .languageCode("de") // Deutsch
+                .languageCode("de")
                 .build();
 
         return comprehendClient.detectSentiment(request);

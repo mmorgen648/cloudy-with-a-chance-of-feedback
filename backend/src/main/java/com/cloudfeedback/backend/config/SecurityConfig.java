@@ -2,7 +2,6 @@ package com.cloudfeedback.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -11,48 +10,33 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 public class SecurityConfig {
 
         @Bean
-        @Order(1)
-        public SecurityFilterChain actuatorSecurity(HttpSecurity http) throws Exception {
-
-                http
-                                .securityMatcher("/actuator/**")
-                                .csrf(csrf -> csrf.disable())
-                                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-
-                return http.build();
-        }
-
-        @Bean
-        @Order(2)
-        public SecurityFilterChain publicFeedbackSecurity(HttpSecurity http) throws Exception {
-
-                http
-                                .securityMatcher(new AntPathRequestMatcher("/api/feedback"))
-                                .csrf(csrf -> csrf.disable())
-                                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-
-                return http.build();
-        }
-
-        @Bean
-        @Order(3)
-        public SecurityFilterChain adminApiSecurity(HttpSecurity http) throws Exception {
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
 
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/h2-console/**").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
+
+                                                // Öffentliches Feedbackformular
+                                                .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
+
+                                                // Admin APIs
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback").hasRole("ADMIN")
-                                                .anyRequest().authenticated())
+                                                .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
+
+                                                // Actuator
+                                                .requestMatchers("/actuator/**").permitAll()
+
+                                                // H2 Console
+                                                .requestMatchers("/h2-console/**").permitAll()
+
+                                                .anyRequest().permitAll())
 
                                 .oauth2ResourceServer(oauth2 -> oauth2
                                                 .jwt(jwt -> jwt.jwtAuthenticationConverter(

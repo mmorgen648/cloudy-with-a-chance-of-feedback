@@ -5,48 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cloudy With A Chance Of Feedback</title>
 
-    <!-- ============================================================
-         GOOGLE FONT
-         ============================================================ -->
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- ============================================================
-         GLOBAL STYLESHEET
-         ============================================================ -->
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
-    <!-- ============================================================
-         HEADER
-         ============================================================ -->
     <header class="header">
       <div class="header-inner">
-        <!-- Logo -->
         <img src="assets/logo-clean.png" alt="Cloudy Logo" class="logo" />
-
-        <!-- Titel -->
         <div class="header-title">Cloudy With A Chance Of Feedback</div>
-
-        <!-- Auth Button (Login oder Admin) -->
         <a href="login.html" class="nav-button" id="authButton">Admin Login</a>
       </div>
     </header>
 
-    <!-- ============================================================
-         MAIN CONTENT
-         ============================================================ -->
     <main class="main">
       <section class="card">
         <h2>Feedback abgeben</h2>
 
-        <!-- ============================================================
-             FEEDBACK FORM
-             Wichtig: ID hinzugefügt damit JS das Formular abfangen kann
-             ============================================================ -->
         <form class="form" id="feedbackForm">
           <label for="feedback">Dein Feedback</label>
           <textarea id="feedback" rows="5" required minlength="5"></textarea>
@@ -58,20 +37,7 @@
       </section>
     </main>
 
-    <!-- ============================================================
-         AUTH SCRIPT
-         ============================================================ -->
     <script>
-      // ============================================================
-      // Auth-Handling für die Startseite
-      //
-      // NICHT eingeloggt:
-      // [Admin Login]
-      //
-      // Eingeloggt:
-      // [Admin] [Logout]
-      // ============================================================
-
       document.addEventListener("DOMContentLoaded", () => {
         const authButton = document.getElementById("authButton");
         const token = sessionStorage.getItem("id_token");
@@ -114,16 +80,6 @@
         authButton.parentNode.appendChild(logoutButton);
       });
 
-      // ============================================================
-      // FEEDBACK FORM SUBMIT
-      //
-      // Sendet Feedback an Backend API
-      // POST /api/feedback
-      //
-      // Flow:
-      // Browser → CloudFront → ALB → EKS → Spring Boot → RDS
-      // ============================================================
-
       const form = document.getElementById("feedbackForm");
 
       form.addEventListener("submit", async (event) => {
@@ -139,11 +95,11 @@
             },
 
             // --------------------------------------------------------
-            // WICHTIG:
-            // Backend erwartet Feld "text"
+            // KORREKT:
+            // Backend erwartet JSON Feld "message"
             // --------------------------------------------------------
             body: JSON.stringify({
-              text: message,
+              message: message,
             }),
           });
 
@@ -153,7 +109,6 @@
 
           alert("Feedback erfolgreich gespeichert!");
 
-          // Feld leeren
           document.getElementById("feedback").value = "";
         } catch (error) {
           console.error("Feedback Fehler:", error);
