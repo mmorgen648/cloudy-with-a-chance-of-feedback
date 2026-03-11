@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 public class SecurityConfig {
@@ -32,10 +33,9 @@ public class SecurityConfig {
         public SecurityFilterChain publicFeedbackSecurity(HttpSecurity http) throws Exception {
 
                 http
-                                .securityMatcher("/api/feedback", "/api/feedback/**")
+                                .securityMatcher(new AntPathRequestMatcher("/api/feedback"))
                                 .csrf(csrf -> csrf.disable())
-                                .authorizeHttpRequests(auth -> auth
-                                                .anyRequest().permitAll());
+                                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 
                 return http.build();
         }
