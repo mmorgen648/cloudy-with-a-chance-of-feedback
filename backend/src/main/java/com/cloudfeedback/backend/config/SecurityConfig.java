@@ -15,9 +15,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-        /**
-         * 1️⃣ Actuator – öffentlich
-         */
         @Bean
         @Order(1)
         public SecurityFilterChain actuatorSecurity(HttpSecurity http) throws Exception {
@@ -30,10 +27,6 @@ public class SecurityConfig {
                 return http.build();
         }
 
-        /**
-         * 2️⃣ Public Feedback Endpoint
-         * KEIN OAuth2 Filter
-         */
         @Bean
         @Order(2)
         public SecurityFilterChain publicFeedbackSecurity(HttpSecurity http) throws Exception {
@@ -42,15 +35,11 @@ public class SecurityConfig {
                                 .securityMatcher("/api/feedback/**")
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
-                                                .anyRequest().denyAll());
+                                                .anyRequest().permitAll());
 
                 return http.build();
         }
 
-        /**
-         * 3️⃣ Admin API
-         */
         @Bean
         @Order(3)
         public SecurityFilterChain adminApiSecurity(HttpSecurity http) throws Exception {
@@ -60,14 +49,9 @@ public class SecurityConfig {
                                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
 
                                 .authorizeHttpRequests(auth -> auth
-
-                                                // H2 Console lokal
                                                 .requestMatchers("/h2-console/**").permitAll()
-
-                                                // Admin APIs
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback").hasRole("ADMIN")
-
                                                 .anyRequest().authenticated())
 
                                 .oauth2ResourceServer(oauth2 -> oauth2
