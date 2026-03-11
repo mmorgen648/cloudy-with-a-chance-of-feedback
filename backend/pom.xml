@@ -37,7 +37,7 @@
 
     <dependencies>
 
-                <!-- Spring Boot -->
+        <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -77,7 +77,7 @@
             <scope>runtime</scope>
         </dependency>
 
-                <!-- PostgreSQL (RDS – prod Profil) -->
+        <!-- PostgreSQL (RDS – prod Profil) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -97,7 +97,17 @@
             <artifactId>comprehend</artifactId>
         </dependency>
 
-		<!-- AWS SSO Support -->
+        <!-- ====================================================== -->
+        <!-- WICHTIG: STS Dependency für IRSA (EKS ServiceAccount) -->
+        <!-- Ohne diese Dependency kann WebIdentityTokenCredentials -->
+        <!-- nicht funktionieren → genau der Fehler aus deinem Log -->
+        <!-- ====================================================== -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sts</artifactId>
+        </dependency>
+
+        <!-- AWS SSO Support (nur für lokale CLI Nutzung relevant) -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sso</artifactId>
