@@ -5,6 +5,7 @@ import com.cloudfeedback.backend.service.FeedbackService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * FeedbackController
@@ -29,5 +30,13 @@ public class FeedbackController {
     @GetMapping
     public List<Feedback> getAllFeedback() {
         return feedbackService.getAllFeedback();
+    }
+
+    /**
+     * Statistik der letzten 7 Tage
+     */
+    @GetMapping("/stats")
+    public Map<String, Integer> getStats() {
+        return feedbackService.getFeedbackStatsLast7Days();
     }
 }

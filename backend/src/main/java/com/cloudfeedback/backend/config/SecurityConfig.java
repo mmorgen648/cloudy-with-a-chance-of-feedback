@@ -52,10 +52,13 @@ public class SecurityConfig {
                                                 .requestMatchers("/h2-console/**").permitAll()
 
                                                 // Öffentliches Feedbackformular (Projektanforderung)
-                                                // POST darf ohne Login erfolgen
                                                 .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/feedback/**").permitAll()
 
-                                                // Lesen von Feedback ist nur für Admin erlaubt
+                                                // Admin Statistik Endpoint
+                                                .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
+
+                                                // Lesen aller Feedbacks nur für Admin
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback/**").hasRole("ADMIN")
 
                                                 // Alle anderen Endpoints benötigen Authentifizierung
@@ -80,8 +83,8 @@ public class SecurityConfig {
                 // Cognito speichert Rollen im Claim "cognito:groups"
                 gac.setAuthoritiesClaimName("cognito:groups");
 
-                // Kein ROLE_ Prefix hinzufügen (Cognito liefert bereits ADMIN)
-                gac.setAuthorityPrefix("");
+                // Wichtig: Spring erwartet ROLE_ Prefix
+                gac.setAuthorityPrefix("ROLE_");
 
                 JwtAuthenticationConverter jac = new JwtAuthenticationConverter();
                 jac.setJwtGrantedAuthoritiesConverter(gac);

@@ -134,15 +134,15 @@
           const data = await response.json();
 
           document.getElementById("positiveCount").textContent =
-            data.POSITIVE ?? 0;
+            data.positive ?? 0;
 
           document.getElementById("negativeCount").textContent =
-            data.NEGATIVE ?? 0;
+            data.negative ?? 0;
 
           document.getElementById("neutralCount").textContent =
-            data.NEUTRAL ?? 0;
+            data.neutral ?? 0;
 
-          document.getElementById("mixedCount").textContent = data.MIXED ?? 0;
+          document.getElementById("mixedCount").textContent = data.mixed ?? 0;
         } catch (error) {
           console.error("Stats Fehler:", error);
         }
