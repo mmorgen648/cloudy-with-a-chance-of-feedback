@@ -2,40 +2,33 @@
 # GitHub Actions CI/CD Pipeline
 # Deploy Backend + Frontend auf AWS EKS
 #
-# WICHTIG:
-# Diese Pipeline baut Docker Images mit Git SHA Tags
-# und ersetzt diese automatisch in den Kubernetes
-# Manifests bevor deployt wird.
-#
-# Dadurch wird sichergestellt:
-# - jeder Commit erzeugt ein neues Image
-# - Kubernetes zieht automatisch das neue Image
-# - kein manuelles Editieren der YAML nötig
+# Diese Pipeline:
+# 1. führt Backend Tests aus
+# 2. baut Docker Images mit Commit SHA
+# 3. pusht Images nach ECR
+# 4. deployt auf EKS
+# 5. setzt Images per kubectl set image
+# 6. erstellt automatisch das DB Secret
 # =========================================================
 
 name: Deploy to EKS
 
-# Pipeline wird bei jedem Push auf main ausgelöst
 on:
   push:
     branches:
       - main
 
-# Rechte für OIDC Login zu AWS
 permissions:
   id-token: write
   contents: read
 
-# Globale Variablen
 env:
   AWS_REGION: eu-central-1
   CLUSTER_NAME: cloudy-eks
 
-  # ECR Repositories
   ECR_BACKEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend
   ECR_FRONTEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend
 
-  # CloudFront Distribution
   CLOUDFRONT_DISTRIBUTION: EEFDFZ6ZWF6FL
 
 jobs:
@@ -50,8 +43,7 @@ jobs:
         uses: actions/checkout@v4
 
       # -----------------------------------------------------
-      # AWS Login über GitHub OIDC Role
-      # Keine statischen AWS Keys nötig
+      # AWS Login über OIDC Role
       # -----------------------------------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -60,8 +52,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # -----------------------------------------------------
-      # Backend Unit Tests ausführen
-      # Pipeline stoppt bei Testfehlern
+      # Backend Tests
       # -----------------------------------------------------
       - name: Run backend tests
         run: |
@@ -70,7 +61,7 @@ jobs:
           ./mvnw test
 
       # -----------------------------------------------------
-      # Login in Amazon ECR Container Registry
+      # Login in Amazon ECR
       # -----------------------------------------------------
       - name: Login to Amazon ECR
         run: |
@@ -78,9 +69,7 @@ jobs:
           docker login --username AWS --password-stdin 038217523163.dkr.ecr.eu-central-1.amazonaws.com
 
       # -----------------------------------------------------
-      # Backend Docker Image bauen
-      # Wichtig: linux/amd64 wegen EKS Nodes
-      # Tag = Git Commit SHA
+      # Backend Image bauen
       # -----------------------------------------------------
       - name: Build backend image
         run: |
@@ -90,14 +79,14 @@ jobs:
           ./backend
 
       # -----------------------------------------------------
-      # Backend Image nach ECR pushen
+      # Backend Image pushen
       # -----------------------------------------------------
       - name: Push backend image
         run: |
           docker push $ECR_BACKEND:${{ github.sha }}
 
       # -----------------------------------------------------
-      # Frontend Docker Image bauen
+      # Frontend Image bauen
       # -----------------------------------------------------
       - name: Build frontend image
         run: |
@@ -107,14 +96,14 @@ jobs:
           ./frontend
 
       # -----------------------------------------------------
-      # Frontend Image nach ECR pushen
+      # Frontend Image pushen
       # -----------------------------------------------------
       - name: Push frontend image
         run: |
           docker push $ECR_FRONTEND:${{ github.sha }}
 
       # -----------------------------------------------------
-      # kubeconfig für Zugriff auf EKS aktualisieren
+      # kubeconfig für Zugriff auf EKS
       # -----------------------------------------------------
       - name: Update kubeconfig
         run: |
@@ -123,28 +112,37 @@ jobs:
           --region $AWS_REGION
 
       # -----------------------------------------------------
-      # IMAGE TAGS IN MANIFEST ERSETZEN
-      #
-      # Hier wird das Git SHA Image automatisch
-      # in die Kubernetes YAML Dateien geschrieben.
-      #
-      # Dadurch wird garantiert, dass Kubernetes
-      # das neue Image deployt.
+      # Datenbank Secret automatisch erstellen
       # -----------------------------------------------------
-      - name: Update Kubernetes image tags
+      - name: Create database secret
         run: |
-          sed -i "s|$ECR_BACKEND:.*|$ECR_BACKEND:${{ github.sha }}|g" k8s/backend-deployment.yaml
-          sed -i "s|$ECR_FRONTEND:.*|$ECR_FRONTEND:${{ github.sha }}|g" k8s/frontend-deployment.yaml
+          kubectl create secret generic db-secret \
+          --from-literal=DB_USERNAME=${{ secrets.DB_USERNAME }} \
+          --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+          --dry-run=client -o yaml | kubectl apply -f -
 
       # -----------------------------------------------------
-      # Deployment auf Kubernetes Cluster
+      # Kubernetes Ressourcen deployen
       # -----------------------------------------------------
-      - name: Deploy to Kubernetes
+      - name: Deploy base manifests
         run: |
           kubectl apply -f k8s/
 
       # -----------------------------------------------------
-      # Warten bis Pods erfolgreich gestartet sind
+      # Images im Deployment setzen
+      # -----------------------------------------------------
+      - name: Update backend image
+        run: |
+          kubectl set image deployment/backend \
+          backend=$ECR_BACKEND:${{ github.sha }}
+
+      - name: Update frontend image
+        run: |
+          kubectl set image deployment/frontend \
+          frontend=$ECR_FRONTEND:${{ github.sha }}
+
+      # -----------------------------------------------------
+      # Rollout Status prüfen
       # -----------------------------------------------------
       - name: Check rollout
         run: |
@@ -152,10 +150,7 @@ jobs:
           kubectl rollout status deployment/frontend --timeout=120s
 
       # -----------------------------------------------------
-      # CloudFront Cache Invalidation
-      #
-      # Entfernt alte Dateien aus dem CDN Cache,
-      # damit neue JS/HTML sofort ausgeliefert werden.
+      # CloudFront Cache leeren
       # -----------------------------------------------------
       - name: Invalidate CloudFront cache
         run: |

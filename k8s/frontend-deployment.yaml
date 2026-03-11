@@ -37,9 +37,14 @@ spec:
 
           # Default Image aus AWS ECR
           # Dieses Image dient nur als Initialwert.
-          # Die GitHub Actions Pipeline ersetzt dieses
-          # Image automatisch mit einem neuen SHA Tag.
+          # Das echte Image wird später per
+          # "kubectl set image" in der Pipeline gesetzt.
           image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend:5809c5d
+
+          # Wichtig:
+          # Kubernetes soll immer das aktuelle Image aus ECR ziehen,
+          # damit kein altes gecachtes Image weiterverwendet wird.
+          imagePullPolicy: Always
 
           # nginx läuft im Container auf Port 80
           ports:

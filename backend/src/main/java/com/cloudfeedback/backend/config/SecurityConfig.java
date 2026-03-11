@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -14,60 +15,77 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    /**
-     * Security Chain für Actuator
-     * → komplett ohne Auth
-     */
-    @Bean
-    @Order(1)
-    public SecurityFilterChain actuatorSecurity(HttpSecurity http) throws Exception {
+        /**
+         * Security Chain für Actuator
+         * → komplett ohne Auth
+         */
+        @Bean
+        @Order(1)
+        public SecurityFilterChain actuatorSecurity(HttpSecurity http) throws Exception {
 
-        http
-                .securityMatcher("/actuator/**")
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll());
+                http
+                                .securityMatcher("/actuator/**")
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth
+                                                .anyRequest().permitAll());
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    /**
-     * Haupt Security für API
-     */
-    @Bean
-    @Order(2)
-    public SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
+        /**
+         * Haupt Security für API
+         */
+        @Bean
+        @Order(2)
+        public SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
 
-        http
-                .csrf(csrf -> csrf.disable())
+                http
+                                .csrf(csrf -> csrf.disable())
 
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.disable()))
+                                // H2 Console benötigt deaktivierte Frame Options
+                                .headers(headers -> headers
+                                                .frameOptions(frame -> frame.disable()))
 
-                .authorizeHttpRequests(auth -> auth
+                                .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/h2-console/**").permitAll()
+                                                // H2 Console lokal erlauben
+                                                .requestMatchers("/h2-console/**").permitAll()
 
-                        .requestMatchers("/api/feedback/**").hasRole("ADMIN")
+                                                // Öffentliches Feedbackformular (Projektanforderung)
+                                                // POST darf ohne Login erfolgen
+                                                .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
 
-                        .anyRequest().authenticated())
+                                                // Lesen von Feedback ist nur für Admin erlaubt
+                                                .requestMatchers(HttpMethod.GET, "/api/feedback/**").hasRole("ADMIN")
 
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                                                // Alle anderen Endpoints benötigen Authentifizierung
+                                                .anyRequest().authenticated())
 
-        return http.build();
-    }
+                                // Cognito JWT Validierung
+                                .oauth2ResourceServer(oauth2 -> oauth2
+                                                .jwt(jwt -> jwt
+                                                                .jwtAuthenticationConverter(
+                                                                                jwtAuthenticationConverter())));
 
-    private Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
+                return http.build();
+        }
 
-        JwtGrantedAuthoritiesConverter gac = new JwtGrantedAuthoritiesConverter();
-        gac.setAuthoritiesClaimName("cognito:groups");
-        gac.setAuthorityPrefix("");
+        /**
+         * Konvertiert Cognito Gruppen → Spring Security Authorities
+         */
+        private Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
 
-        JwtAuthenticationConverter jac = new JwtAuthenticationConverter();
-        jac.setJwtGrantedAuthoritiesConverter(gac);
+                JwtGrantedAuthoritiesConverter gac = new JwtGrantedAuthoritiesConverter();
 
-        return jac;
-    }
+                // Cognito speichert Rollen im Claim "cognito:groups"
+                gac.setAuthoritiesClaimName("cognito:groups");
+
+                // Kein ROLE_ Prefix hinzufügen (Cognito liefert bereits ADMIN)
+                gac.setAuthorityPrefix("");
+
+                JwtAuthenticationConverter jac = new JwtAuthenticationConverter();
+                jac.setJwtGrantedAuthoritiesConverter(gac);
+
+                return jac;
+        }
 }

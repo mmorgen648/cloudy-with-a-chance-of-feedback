@@ -24,11 +24,17 @@ spec:
 
     spec:
       containers:
-        - name:
-            backend
+        # Container Definition
+        - name: backend
 
-            # Backend-Image aus AWS ECR
+          # Backend-Image aus AWS ECR
+          # Der Tag wird automatisch in der CI/CD Pipeline ersetzt
           image: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend:5809c5d
+
+          # Wichtig:
+          # Kubernetes soll immer das Image neu aus ECR ziehen
+          # Dadurch wird verhindert, dass alte Images gecacht werden
+          imagePullPolicy: Always
 
           # Environment Variablen für die Datenbank und das Spring-Profil
           env:

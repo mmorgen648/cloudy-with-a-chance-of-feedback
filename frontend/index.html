@@ -137,8 +137,13 @@
             headers: {
               "Content-Type": "application/json",
             },
+
+            // --------------------------------------------------------
+            // WICHTIG:
+            // Backend erwartet Feld "text"
+            // --------------------------------------------------------
             body: JSON.stringify({
-              message: message,
+              text: message,
             }),
           });
 

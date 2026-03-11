@@ -1,5 +1,6 @@
 package com.cloudfeedback.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -19,6 +20,9 @@ public class Feedback {
     private Long id;
 
     // Text des Kunden
+    // Frontend sendet "message"
+    // → Jackson mappt "message" automatisch auf dieses Feld
+    @JsonProperty("message")
     @Column(nullable = false, length = 2000)
     private String text;
 
@@ -44,19 +48,43 @@ public class Feedback {
 
     // ===== Getter & Setter =====
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getText() { return text; }
-    public void setText(String text) { this.text = text; }
+    public String getText() {
+        return text;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setText(String text) {
+        this.text = text;
+    }
 
-    public String getSentiment() { return sentiment; }
-    public void setSentiment(String sentiment) { this.sentiment = sentiment; }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
-    public String getConfidenceJson() { return confidenceJson; }
-    public void setConfidenceJson(String confidenceJson) { this.confidenceJson = confidenceJson; }
+    public String getSentiment() {
+        return sentiment;
+    }
 
-    public String getKeyPhrasesJson() { return keyPhrasesJson; }
-    public void setKeyPhrasesJson(String keyPhrasesJson) { this.keyPhrasesJson = keyPhrasesJson; }
+    public void setSentiment(String sentiment) {
+        this.sentiment = sentiment;
+    }
+
+    public String getConfidenceJson() {
+        return confidenceJson;
+    }
+
+    public void setConfidenceJson(String confidenceJson) {
+        this.confidenceJson = confidenceJson;
+    }
+
+    public String getKeyPhrasesJson() {
+        return keyPhrasesJson;
+    }
+
+    public void setKeyPhrasesJson(String keyPhrasesJson) {
+        this.keyPhrasesJson = keyPhrasesJson;
+    }
 }

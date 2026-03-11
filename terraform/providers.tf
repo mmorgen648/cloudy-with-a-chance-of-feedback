@@ -12,6 +12,15 @@ terraform {
       version = "~> 5.0"
     }
 
+    # Kubernetes Provider
+    # Wird benötigt, damit Terraform Ressourcen
+    # direkt im Kubernetes Cluster erstellen kann
+    # (z.B. aws-auth ConfigMap)
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.29"
+    }
+
     # Random Provider für eindeutige Namen (z.B. Snapshots)
     random = {
       source  = "hashicorp/random"
@@ -37,13 +46,47 @@ provider "aws" {
 
 # ============================================================
 # Zweiter AWS Provider für CloudFront Zertifikate
-# WICHTIG:
 # CloudFront benötigt ACM Zertifikate zwingend in us-east-1
 # ============================================================
 
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
+}
 
-  # Nutzt ebenfalls das gleiche AWS Profil
+# ============================================================
+# EKS Cluster Daten abrufen
+#
+# Diese Datenquellen erlauben Terraform,
+# mit dem Kubernetes API Server zu sprechen.
+# ============================================================
+
+data "aws_eks_cluster" "eks" {
+  name = "cloudy-eks"
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = "cloudy-eks"
+}
+
+# ============================================================
+# Kubernetes Provider
+#
+# Dieser Provider verbindet Terraform mit dem
+# Kubernetes API Server des EKS Clusters.
+#
+# Dadurch kann Terraform Ressourcen wie
+# ConfigMaps oder Secrets direkt im Cluster
+# erstellen.
+# ============================================================
+
+provider "kubernetes" {
+
+  host = data.aws_eks_cluster.eks.endpoint
+
+  cluster_ca_certificate = base64decode(
+    data.aws_eks_cluster.eks.certificate_authority[0].data
+  )
+
+  token = data.aws_eks_cluster_auth.eks.token
 }
