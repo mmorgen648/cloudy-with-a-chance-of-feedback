@@ -52,14 +52,14 @@ public class SecurityConfig {
                                                 .requestMatchers("/h2-console/**").permitAll()
 
                                                 // Öffentliches Feedbackformular (Projektanforderung)
-                                                .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/feedback/**").permitAll()
+                                                // POST /api/feedback muss öffentlich sein
+                                                .requestMatchers("/api/feedback/**").permitAll()
 
                                                 // Admin Statistik Endpoint
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
 
                                                 // Lesen aller Feedbacks nur für Admin
-                                                .requestMatchers(HttpMethod.GET, "/api/feedback/**").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.GET, "/api/feedback").hasRole("ADMIN")
 
                                                 // Alle anderen Endpoints benötigen Authentifizierung
                                                 .anyRequest().authenticated())
