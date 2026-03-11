@@ -16,7 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
         /**
-         * 1) Actuator – komplett öffentlich
+         * 1️⃣ Actuator – öffentlich
          */
         @Bean
         @Order(1)
@@ -31,22 +31,25 @@ public class SecurityConfig {
         }
 
         /**
-         * 2) Public Feedback Endpoint – KEIN OAuth2 Filter
+         * 2️⃣ Public Feedback Endpoint
+         * KEIN OAuth2 Filter
          */
         @Bean
         @Order(2)
         public SecurityFilterChain publicFeedbackSecurity(HttpSecurity http) throws Exception {
 
                 http
-                                .securityMatcher(HttpMethod.POST, "/api/feedback")
+                                .securityMatcher("/api/feedback")
                                 .csrf(csrf -> csrf.disable())
-                                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
+                                                .anyRequest().denyAll());
 
                 return http.build();
         }
 
         /**
-         * 3) Admin API – OAuth2 + Rollenprüfung
+         * 3️⃣ Admin API
          */
         @Bean
         @Order(3)
@@ -61,11 +64,10 @@ public class SecurityConfig {
                                                 // H2 Console lokal
                                                 .requestMatchers("/h2-console/**").permitAll()
 
-                                                // Admin Endpoints
+                                                // Admin APIs
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
                                                 .requestMatchers(HttpMethod.GET, "/api/feedback").hasRole("ADMIN")
 
-                                                // alles andere benötigt Auth
                                                 .anyRequest().authenticated())
 
                                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -75,9 +77,6 @@ public class SecurityConfig {
                 return http.build();
         }
 
-        /**
-         * Cognito Gruppen → Spring Rollen
-         */
         private Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
 
                 JwtGrantedAuthoritiesConverter gac = new JwtGrantedAuthoritiesConverter();
