@@ -32,7 +32,7 @@ public class SecurityConfig {
         public SecurityFilterChain publicFeedbackSecurity(HttpSecurity http) throws Exception {
 
                 http
-                                .securityMatcher("/api/feedback/**")
+                                .securityMatcher("/api/feedback", "/api/feedback/**")
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(auth -> auth
                                                 .anyRequest().permitAll());
