@@ -1,6 +1,15 @@
 PROJEKT: CloudyWithAChanceOfFeedback
 Region: eu-north-1 (Comprehend: eu-central-1)
 
+Hinweis zur Dokumentation:
+
+Die "Tag"-Nummern entsprechen tatsächlichen Arbeitstagen am Projekt.
+Es handelt sich nicht um aufeinanderfolgende Kalendertage und auch
+nicht um klassische 5-Tage-Arbeitswochen.
+
+Die Angabe "Woche X" beschreibt lediglich die Projektphase seit
+Projektstart und dient der persönlichen Orientierung.
+
 ------------------------------------------------------------
 TAG 1 – Projekt & GitHub Setup
 ------------------------------------------------------------
@@ -1021,6 +1030,142 @@ System grundsätzlich funktionsfähig, jedoch Backend API noch nicht vollständi
 Weitere Debugging- und Systemtests geplant für nächsten Arbeitstag.
 
 ------------------------------------------------------------
+TAG 19 – IRSA Debugging + Backend Credentials Fix
+------------------------------------------------------------
+
+Ziel:
+500 Fehler beim Absenden von Feedback analysieren und beheben.
+
+Fehlerbild:
+
+Frontend:
+
+POST /api/feedback
+
+Antwort:
+
+500 Internal Server Error
+
+Backend Log Analyse:
+
+software.amazon.awssdk.core.exception.SdkClientException
+Unable to load credentials from any of the providers in the chain
+
+Analyse:
+
+Amazon Comprehend Aufruf im Backend schlug fehl,
+weil der EKS Pod keine AWS Credentials laden konnte.
+
+IRSA Setup durchgeführt
+
+- OIDC Provider URL des EKS Clusters geprüft
+- IAM Role erstellt:
+
+cloudy-eks-comprehend-role
+
+- Trust Relationship konfiguriert für:
+
+system:serviceaccount:default:backend-sa
+
+- Kubernetes ServiceAccount erstellt:
+
+backend-sa
+
+- ServiceAccount mit IAM Role annotiert
+
+eks.amazonaws.com/role-arn
+
+- Backend Deployment angepasst:
+
+serviceAccountName: backend-sa
+
+- Rolling Update des Deployments ausgelöst
+
+Pod Neustart
+
+kubectl get pods
+
+Neuer Backend Pod wurde erstellt
+und erfolgreich gestartet.
+
+Weitere Fehleranalyse
+
+Backend Log zeigte weiterhin Fehler:
+
+WebIdentityTokenCredentialsProvider
+To use web identity tokens, the 'sts' service module must be on the class path
+
+Root Cause:
+
+AWS SDK Modul für STS fehlte im Backend.
+IRSA nutzt WebIdentityTokenCredentialsProvider,
+welcher das STS Modul benötigt, um temporäre
+AWS Credentials über die IAM Role zu beziehen.
+
+Fix im Backend
+
+Datei:
+
+backend/pom.xml
+
+Dependency ergänzt:
+
+software.amazon.awssdk:sts
+
+Pipeline Deployment
+
+- Commit erstellt
+- GitHub Actions Pipeline gestartet
+- Docker Image neu gebaut
+- Image nach ECR gepusht
+- Deployment auf EKS aktualisiert
+- Kubernetes Rolling Update durchgeführt
+
+Security Verbesserung
+
+- Kubernetes Secret Datei aus Repository entfernt
+
+  k8s/secret.yaml
+
+- Credentials werden nun über GitHub Secrets verwaltet
+  und in der CI/CD Pipeline bereitgestellt
+
+Ziel:
+Keine sensiblen Daten im Git Repository speichern.
+
+Verifikation
+
+Feedback Formular getestet:
+
+POST /api/feedback
+
+Ergebnis:
+
+200 OK
+
+Backend führt nun erfolgreich aus:
+
+- Amazon Comprehend Sentiment Analyse
+- Amazon Comprehend Key Phrase Extraktion
+- Speicherung des Feedback Datensatzes
+
+Ergebnis
+
+- IRSA (IAM Roles for Service Accounts) funktioniert korrekt
+- Backend kann AWS Services ohne statische Credentials nutzen
+- Feedback System vollständig funktionsfähig
+- End-to-End Flow erfolgreich getestet:
+
+Browser
+→ CloudFront
+→ ALB
+→ Backend (EKS)
+→ Amazon Comprehend
+→ RDS PostgreSQL
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -1033,6 +1178,20 @@ us-east-1 (ACM für CloudFront)
 
 Architektur:
 Cloud-native Anwendung auf AWS mit Kubernetes (EKS)
+
+Systemstatus der Anwendung:
+
+Produktionsdomain:
+https://cloudy.cloudhelden-projekte.com
+
+Architekturfluss:
+
+Browser
+→ CloudFront
+→ ALB (AWS Load Balancer Controller / Ingress)
+→ Backend (EKS)
+→ Amazon Comprehend
+→ RDS PostgreSQL
 
 Infrastruktur (Terraform):
 - VPC mit Public und Private Subnets über 2 Availability Zones
@@ -1091,6 +1250,8 @@ Backend:
 - Integration mit Amazon Comprehend
   - Sentiment Analyse
   - Key Phrase Extraktion
+- IRSA (IAM Roles for Service Accounts) implementiert
+- Backend nutzt IRSA für AWS Credential Zugriff ohne statische Credentials
 
 ML Integration:
 - Amazon Comprehend detectSentiment()
@@ -1114,14 +1275,12 @@ Frontend:
 - Navigation funktioniert
 - Admin Dashboard erreichbar
 
-Backend:
-- API erreichbar
-- Authentifizierte Requests funktionieren
-- Datenbankzugriff aktuell noch in Debugging
-
 Feedback System:
 - Formular sendet Requests an Backend
-- Speicherung und Statistik werden aktuell getestet
+- Feedback Speicherung funktioniert
+- Amazon Comprehend Analyse wird durchgeführt
+- Ergebnisse werden im Feedback Datensatz gespeichert
+- Statistik Endpoint wird aktuell noch implementiert / getestet
 
 Kostenstatus:
 
@@ -1151,29 +1310,6 @@ OPEN TECH TASKS
 
 Backend
 
-- Datenbank Schema prüfen / erstellen
-  Tabelle "feedback" muss existieren
-
-  Erwartetes Schema:
-  feedback(
-    id,
-    text,
-    created_at,
-    sentiment,
-    confidence_json,
-    key_phrases_json
-  )
-
-- JPA Konfiguration prüfen
-  sicherstellen dass Hibernate Tabellen automatisch erstellen kann
-  (spring.jpa.hibernate.ddl-auto=update)
-
-- Feedback Speicherung testen
-  POST /api/feedback muss Daten korrekt in RDS speichern
-
-- Feedback Abruf testen
-  GET /api/feedback muss gespeicherte Daten zurückgeben
-
 - Statistik Endpoint implementieren
   GET /api/feedback/stats
 
@@ -1186,35 +1322,75 @@ Backend
   - neutral
   - mixed
 
+- Statistik Query im Repository implementieren
+  Aggregation der Sentiment-Werte der letzten 7 Tage
+
+- Service Logik für Statistik implementieren
+  Verarbeitung der Query-Ergebnisse
+  Rückgabe als Map<String, Integer>
+
 
 Frontend
 
-- Feedback Formular vollständig testen
-  prüfen ob Request korrekt an Backend gesendet wird
+- Admin Dashboard Statistik integrieren
+  GET /api/feedback/stats vom Backend abrufen
 
-- Feldmapping prüfen
-  Frontend sendet aktuell "message"
-  Backend erwartet "text"
-
-- Admin Dashboard Datenanzeige testen
-  Feedback Liste anzeigen
+- Statistik Anzeige im Dashboard implementieren
+  positive / negative / neutral / mixed darstellen
 
 - Aktualisieren Button im Admin Dashboard testen
-  muss neue Daten vom Backend laden
+  muss neue Statistikdaten vom Backend laden
+
+- Feedback Liste im Admin Dashboard vollständig testen
+  prüfen ob gespeicherte Feedback Einträge korrekt angezeigt werden
 
 
 Systemtests
 
 - End-to-End Test durchführen
-  Browser → CloudFront → ALB → Backend → RDS
+
+  Browser
+  → CloudFront
+  → ALB
+  → Backend (EKS)
+  → Amazon Comprehend
+  → RDS PostgreSQL
 
 - API Tests mit curl durchführen
+
   POST /api/feedback
   GET /api/feedback
   GET /api/feedback/stats
 
 - Authentifizierung testen
+
   Admin Dashboard nur mit gültigem Cognito Token erreichbar
+  Zugriff ohne Token muss blockiert werden
+
+
+Infrastructure
+
+- Cognito Infrastruktur vollständig in Terraform überführen
+
+  Ziel:
+  Alle Authentifizierungsressourcen über IaC verwalten
+
+  Terraform Modul erstellen:
+
+  terraform/modules/cognito/
+
+  Ressourcen:
+
+  - aws_cognito_user_pool
+  - aws_cognito_user_pool_client
+  - aws_cognito_user_pool_domain
+  - aws_cognito_user_group (ADMIN)
+
+  Nach Migration:
+
+  terraform destroy → terraform apply
+
+  muss komplette Infrastruktur reproduzierbar erstellen.
 
 
 CI/CD
@@ -1226,11 +1402,24 @@ CI/CD
   sicherstellen dass neue Images mit Commit SHA laufen
 
 - Pod Status prüfen
+
   kubectl get pods
 
 - Image Version prüfen
+
   kubectl describe deployment frontend
   kubectl describe deployment backend
+
+
+Security
+
+- Sicherstellen dass keine Secrets im Repository liegen
+
+- Kubernetes Secret aus Repository entfernt
+  (k8s/secret.yaml gelöscht)
+
+- Credentials über GitHub Secrets verwalten
+  und in der CI/CD Pipeline verwenden
 
 
 Präsentationsvorbereitung
@@ -1248,6 +1437,8 @@ README.md
 
 - Projektbeschreibung ergänzen
 - Architekturübersicht der Anwendung erklären
+- Architektur-Kurzbeschreibung einfügen (System Architecture Abschnitt)
+
 - verwendete AWS Services dokumentieren
 - Setup Anleitung hinzufügen:
   - Voraussetzungen
@@ -1271,6 +1462,16 @@ ARCHITECTURE.md
   ↓
   RDS PostgreSQL
 
+- Systemübersicht mit Request Flow beschreiben
+
+  Browser
+  → CloudFront
+  → ALB
+  → EKS
+  → Backend
+  → Amazon Comprehend
+  → RDS PostgreSQL
+  
 - zusätzliche AWS Services dokumentieren:
 
   Cognito (Authentication)
@@ -1297,7 +1498,7 @@ Kubernetes Dokumentation
 
 - Deployment Struktur erklären
 - Service Typen erklären (ClusterIP)
-- Ingress erklären (ALB Integration)
+- Ingress erklären (AWS Load Balancer Controller / ALB Integration)
 - HorizontalPodAutoscaler kurz erläutern
 - Liveness und Readiness Probes erklären
 
@@ -1325,6 +1526,13 @@ Kostenkontrolle
 - erklären warum Ressourcen regelmäßig gestoppt werden
 - Node Group Scaling Strategie dokumentieren
 - RDS Stop / Snapshot Strategie erklären
+- Kostenstruktur des EKS Control Plane erläutern
+
+Security Dokumentation
+
+- erklären warum keine Secrets im Repository gespeichert werden
+- GitHub Secrets für CI/CD Credentials beschreiben
+- Umgang mit Kubernetes Secrets dokumentieren
 
 Präsentation vorbereiten
 
