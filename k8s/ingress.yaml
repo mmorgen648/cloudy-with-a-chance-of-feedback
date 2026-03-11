@@ -1,36 +1,20 @@
 # Kubernetes Ingress für Cloudy Feedback
-# Dieses Ingress erzeugt später automatisch einen AWS Application Load Balancer (ALB)
-# und leitet Traffic an Frontend und Backend Services weiter.
+# Dieses Ingress erzeugt automatisch einen AWS ALB
+# und routet Traffic zu Frontend und Backend.
 
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: cloudy-ingress
   annotations:
-    # AWS ALB Ingress Controller verwenden
     kubernetes.io/ingress.class: alb
-
-    # Internet-facing Load Balancer
     alb.ingress.kubernetes.io/scheme: internet-facing
-
-    # ALB soll IP Targets nutzen (nicht NodePort)
     alb.ingress.kubernetes.io/target-type: ip
-
-    # Health Check Pfad für Backend Pods
-    # Spring Boot Actuator Endpoint
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
 
-    # =========================================================
-    # HTTPS KONFIGURATION
-    # =========================================================
-
-    # HTTP und HTTPS Listener aktivieren
+    # HTTPS
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
-
-    # HTTP automatisch auf HTTPS umleiten
     alb.ingress.kubernetes.io/ssl-redirect: "443"
-
-    # ACM Zertifikat für HTTPS auf dem ALB
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-central-1:038217523163:certificate/1d04d947-21b2-402c-a5bf-75e1280e00d9
 
 spec:
@@ -39,16 +23,7 @@ spec:
   rules:
     - http:
         paths:
-          # Frontend Route
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80
-
-          # Backend API Route
+          # Backend API zuerst
           - path: /api
             pathType: Prefix
             backend:
@@ -56,3 +31,12 @@ spec:
                 name: backend
                 port:
                   number: 8080
+
+          # Frontend danach
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
