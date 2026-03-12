@@ -51,13 +51,13 @@ resource "aws_cognito_user_pool" "main" {
   auto_verified_attributes = ["email"]
 
   # ------------------------------------------------------------
-  # Prevent Destroy
+  # Schutz
   #
-  # Der User Pool darf NIEMALS per terraform destroy gelöscht
-  # werden. Alle Benutzer würden unwiederbringlich verloren gehen.
+  # Der User Pool wird durch scripts/destroy.sh geschützt.
+  # Cognito wird beim destroy.sh automatisch ausgeschlossen.
+  # Nur terraform destroy ohne Script löscht den User Pool.
   # ------------------------------------------------------------
   lifecycle {
-    prevent_destroy = true
     ignore_changes  = all
   }
 }
