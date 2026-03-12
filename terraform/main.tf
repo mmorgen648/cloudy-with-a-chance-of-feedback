@@ -302,7 +302,7 @@ module "cloudfront" {
   acm_certificate_arn = module.acm.aws_acm_certificate_arn
 
   # ALB DNS automatisch aus AWS lesen
-alb_dns_name = data.aws_lb.eks_ingress.dns_name
+  alb_dns_name = data.aws_lb.eks_ingress.dns_name
 }
 
 # ------------------------------------------------------------

@@ -5,9 +5,10 @@
 # Dieser User Pool wurde ursprünglich manuell erstellt und
 # wird hier per "terraform import" in den State übernommen.
 #
-# WICHTIG: lifecycle prevent_destroy = true
-# Der User Pool darf beim terraform destroy NICHT gelöscht
-# werden – alle User und Gruppen würden verloren gehen.
+# WICHTIG: lifecycle prevent_destroy
+# Der User Pool selbst ist mit prevent_destroy = true geschützt.
+# Domain, Client und Gruppe werden beim destroy gelöscht
+# und beim apply automatisch neu erstellt – kein Datenverlust.
 # ============================================================
 
 terraform {
@@ -66,6 +67,9 @@ resource "aws_cognito_user_pool" "main" {
 #
 # Die Hosted UI Domain für den Login Flow.
 # Beispiel: eu-central-1eg8otyz7b.auth.eu-central-1.amazoncognito.com
+#
+# Wird beim terraform destroy gelöscht und beim apply
+# automatisch neu erstellt – kein Datenverlust.
 # ------------------------------------------------------------
 resource "aws_cognito_user_pool_domain" "main" {
 
@@ -73,7 +77,7 @@ resource "aws_cognito_user_pool_domain" "main" {
   user_pool_id = aws_cognito_user_pool.main.id
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = all
   }
 }
@@ -83,6 +87,9 @@ resource "aws_cognito_user_pool_domain" "main" {
 #
 # Der App Client für das Frontend.
 # Konfiguriert den Authorization Code Flow mit PKCE.
+#
+# Wird beim terraform destroy gelöscht und beim apply
+# automatisch neu erstellt – kein Datenverlust.
 # ------------------------------------------------------------
 resource "aws_cognito_user_pool_client" "frontend" {
 
@@ -124,7 +131,7 @@ resource "aws_cognito_user_pool_client" "frontend" {
   supported_identity_providers = ["COGNITO"]
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = all
   }
 }
@@ -135,6 +142,9 @@ resource "aws_cognito_user_pool_client" "frontend" {
 # Benutzer in dieser Gruppe erhalten Admin-Rechte.
 # Der JWT Token enthält cognito:groups = ["ROLE_ADMIN"]
 # Das Backend prüft diese Gruppe für geschützte Endpoints.
+#
+# Wird beim terraform destroy gelöscht und beim apply
+# automatisch neu erstellt – kein Datenverlust.
 # ------------------------------------------------------------
 resource "aws_cognito_user_group" "admin" {
 
@@ -143,7 +153,7 @@ resource "aws_cognito_user_group" "admin" {
   description  = "Admin users with full access to the feedback dashboard"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = all
   }
 }
