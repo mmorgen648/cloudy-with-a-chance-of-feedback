@@ -1,5 +1,5 @@
 PROJEKT: CloudyWithAChanceOfFeedback
-Region: eu-north-1 (Comprehend: eu-central-1)
+Region: eu-central-1 (ACM CloudFront: us-east-1)
 
 Hinweis zur Dokumentation:
 
@@ -1166,6 +1166,54 @@ Browser
 Status: Abgeschlossen
 
 ------------------------------------------------------------
+TAG 20 – Admin Dashboard + JWT Fix + Cognito in Terraform + Destroy/Apply Vorbereitung
+------------------------------------------------------------
+
+- Admin Dashboard vollständig implementiert:
+  - Feedback-Liste als Karten-Layout
+  - Sentiment-Badges (POSITIVE / NEGATIVE / NEUTRAL / MIXED)
+  - Confidence-Bar pro Feedback
+  - Key Phrases Anzeige
+  - Statistik (Gesamtanzahl + Sentiment-Verteilung)
+  - Aktualisieren Button
+
+- JWT 401/403 Fix:
+  - CloudFront: Authorization Header in ordered_cache_behavior für /api/* ergänzt
+  - application-prod.properties: issuer-uri und jwk-set-uri gesetzt
+  - SecurityConfig.java: gac.setAuthorityPrefix("") + hasAuthority("ROLE_ADMIN")
+
+- Cognito vollständig in Terraform importiert:
+  - terraform/modules/cognito/ erstellt (main.tf, variables.tf, outputs.tf)
+  - 4 Ressourcen per terraform import: User Pool, Domain, Client, Admin Gruppe
+  - terraform plan zeigt No changes
+
+- Destroy/Apply Vorbereitung:
+  - null_resource.delete_ingress_before_destroy in terraform/modules/eks/main.tf eingebaut
+  - scripts/destroy.sh erstellt (Cognito per -target ausgeschlossen)
+  - scripts/apply.sh erstellt (inkl. kubeconfig + ALB Controller + Pipeline Trigger)
+  - Cognito prevent_destroy aus main.tf entfernt (Schutz kommt durch destroy.sh)
+
+- Destroy/Apply Test durchgeführt:
+  - Destroy lief in mehreren Schritten wegen hängendem null_resource + ALB/VPC Abhängigkeiten
+  - ALB und k8s Security Groups manuell bereinigt
+  - Data Sources temporär auskommentiert (providers.tf + main.tf)
+  - Destroy erfolgreich abgeschlossen
+  - Apply auf Tag 21 verschoben (erst TODO-Fixes umsetzen)
+
+- TODO für Tag 21 dokumentiert:
+  - null_resource aus EKS Modul entfernen
+  - Data Sources mit variable "eks_exists" absichern
+  - destroy.sh: ALB + Security Groups automatisch aufräumen
+
+Ergebnis:
+- Admin Dashboard produktionsreif
+- JWT Validierung korrekt
+- Cognito vollständig als IaC verwaltet
+- Destroy/Apply Ablauf verstanden und dokumentiert
+
+Status: In Bearbeitung
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 
@@ -1564,4 +1612,14 @@ DESTROY-LOG
 - Zerstörte Module: module.eks
 - Grund: Tagesende – Kostenkontrolle gemäß REQUIREMENTS.md
 - RDS Snapshot: nicht erforderlich (RDS gestoppt)
+----------------------------------------
+2026-03-13
+- Zerstörte Module: module.eks, module.rds, module.vpc, module.cloudfront,
+  module.acm, module.security_groups, module.alb_controller,
+  aws_acm_certificate, aws_route53_record, aws_iam_role (GitHub Actions)
+- Grund: Destroy/Apply Test – Reproduzierbarkeit der Infrastruktur prüfen
+- RDS Snapshot: cloudy-postgres-final-8bc91641 (behalten)
+- Cognito: erhalten (durch destroy.sh ausgeschlossen)
+- Hinweis: Destroy lief in mehreren Schritten wegen hängendem
+  null_resource + ALB/VPC Abhängigkeiten – siehe TODO Liste Tag 21
 ----------------------------------------

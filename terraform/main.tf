@@ -280,12 +280,12 @@ resource "aws_acm_certificate_validation" "alb_cert_validation" {
 # ALB aus AWS, damit wir seinen DNS Namen automatisch
 # verwenden können.
 # ------------------------------------------------------------
-data "aws_lb" "eks_ingress" {
+/* data "aws_lb" "eks_ingress" {      <------------------------------
 
   tags = {
     "elbv2.k8s.aws/cluster" = "cloudy-eks"
   }
-}
+} */
 
 # ------------------------------------------------------------
 # CloudFront Modul
@@ -301,8 +301,9 @@ module "cloudfront" {
   # ACM Zertifikat aus dem ACM Modul
   acm_certificate_arn = module.acm.aws_acm_certificate_arn
 
-  # ALB DNS automatisch aus AWS lesen
-  alb_dns_name = data.aws_lb.eks_ingress.dns_name
+  # ALB DNS temporär auskommentiert während Destroy <----------------
+  # alb_dns_name = data.aws_lb.eks_ingress.dns_name
+  alb_dns_name = "placeholder.example.com"
 }
 
 # ------------------------------------------------------------

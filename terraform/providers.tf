@@ -61,13 +61,13 @@ provider "aws" {
 # mit dem Kubernetes API Server zu sprechen.
 # ============================================================
 
-data "aws_eks_cluster" "eks" {
+/* data "aws_eks_cluster" "eks" {           <------------------------
   name = "cloudy-eks"
 }
 
 data "aws_eks_cluster_auth" "eks" {
   name = "cloudy-eks"
-}
+} */
 
 # ============================================================
 # Kubernetes Provider
@@ -80,7 +80,7 @@ data "aws_eks_cluster_auth" "eks" {
 # erstellen.
 # ============================================================
 
-provider "kubernetes" {
+/* provider "kubernetes" {              <----------------------------
 
   host = data.aws_eks_cluster.eks.endpoint
 
@@ -89,4 +89,4 @@ provider "kubernetes" {
   )
 
   token = data.aws_eks_cluster_auth.eks.token
-}
+} */
