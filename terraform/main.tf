@@ -321,6 +321,21 @@ output "rds_db_name" {
 }
 
 # ------------------------------------------------------------
+# Cognito Modul
+#
+# Übernimmt den bestehenden Cognito User Pool in Terraform.
+# Der User Pool wurde ursprünglich manuell erstellt und wird
+# per "terraform import" in den State übernommen.
+#
+# WICHTIG: prevent_destroy = true im Modul verhindert
+# dass der User Pool beim terraform destroy gelöscht wird.
+# ------------------------------------------------------------
+module "cognito" {
+  source      = "./modules/cognito"
+  domain_name = var.domain_name
+}
+
+# ------------------------------------------------------------
 # Route53 DNS Record
 #
 # Dieser Record verbindet deine öffentliche Domain
