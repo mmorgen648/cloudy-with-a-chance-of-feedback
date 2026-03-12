@@ -55,3 +55,8 @@ dist/
 *.tar.gz
 *.rar
 /aws-auth.yaml
+
+backend-code.txt
+pom.xml.txt
+terraform-code.txt
+terraform-struktur.txt
