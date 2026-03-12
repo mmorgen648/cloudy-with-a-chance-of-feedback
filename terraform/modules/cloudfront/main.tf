@@ -87,74 +87,79 @@ resource "aws_cloudfront_distribution" "this" {
 
     forwarded_values {
 
-  # ------------------------------------------------------------
-  # Host Header an ALB weiterleiten
-  #
-  # CloudFront muss den Host Header weiterleiten,
-  # damit der ALB das richtige Zertifikat verwenden kann.
-  # Beispiel:
-  # Host: cloudy.cloudhelden-projekte.com
-  # ------------------------------------------------------------
-        headers = ["Host"]
+      # ------------------------------------------------------------
+      # Host Header an ALB weiterleiten
+      #
+      # CloudFront muss den Host Header weiterleiten,
+      # damit der ALB das richtige Zertifikat verwenden kann.
+      # Beispiel:
+      # Host: cloudy.cloudhelden-projekte.com
+      # ------------------------------------------------------------
+      headers = ["Host"]
 
-        query_string = true
+      query_string = true
 
-        cookies {
-            forward = "all"
-        }
+      cookies {
+        forward = "all"
+      }
     }
   }
 
-# ------------------------------------------------------------
-# API Cache Behavior
-#
-# Laut Projekt-Checkliste dürfen API Requests NICHT gecached
-# werden. Deshalb wird für /api/* ein eigener Behavior mit
-# TTL = 0 definiert.
-#
-# Dadurch werden API Requests immer direkt an den Origin
-# (ALB → Backend Service) weitergeleitet.
-# ------------------------------------------------------------
-ordered_cache_behavior {
+  # ------------------------------------------------------------
+  # API Cache Behavior
+  #
+  # Laut Projekt-Checkliste dürfen API Requests NICHT gecached
+  # werden. Deshalb wird für /api/* ein eigener Behavior mit
+  # TTL = 0 definiert.
+  #
+  # Dadurch werden API Requests immer direkt an den Origin
+  # (ALB → Backend Service) weitergeleitet.
+  #
+  # Authorization Header wird explizit weitergeleitet,
+  # damit JWT Token das Backend erreichen kann.
+  # ------------------------------------------------------------
+  ordered_cache_behavior {
 
-  path_pattern = "/api/*"
+    path_pattern = "/api/*"
 
-  target_origin_id = "alb-origin"
+    target_origin_id = "alb-origin"
 
-  viewer_protocol_policy = "redirect-to-https"
+    viewer_protocol_policy = "redirect-to-https"
 
-  allowed_methods = [
-    "GET",
-    "HEAD",
-    "OPTIONS",
-    "PUT",
-    "POST",
-    "PATCH",
-    "DELETE"
-  ]
-
-  cached_methods = [
-    "GET",
-    "HEAD"
-  ]
-
-  forwarded_values {
-
-    query_string = true
-
-    headers = [
-      "Host"
+    allowed_methods = [
+      "GET",
+      "HEAD",
+      "OPTIONS",
+      "PUT",
+      "POST",
+      "PATCH",
+      "DELETE"
     ]
 
-    cookies {
-      forward = "all"
+    cached_methods = [
+      "GET",
+      "HEAD"
+    ]
+
+    forwarded_values {
+
+      query_string = true
+
+      headers = [
+        "Host",
+        "Authorization"
+      ]
+
+      cookies {
+        forward = "all"
+      }
     }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
   }
 
-  min_ttl     = 0
-  default_ttl = 0
-  max_ttl     = 0
-}
   # ------------------------------------------------------------
   # Viewer Certificate
   #

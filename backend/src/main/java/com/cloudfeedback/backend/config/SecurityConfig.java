@@ -27,8 +27,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
 
                                                 // Admin APIs
-                                                .requestMatchers(HttpMethod.GET, "/api/feedback").hasRole("ADMIN")
-                                                .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.GET, "/api/feedback").hasAuthority("ROLE_ADMIN")
+                                                .requestMatchers(HttpMethod.GET, "/api/feedback/stats").hasAuthority("ROLE_ADMIN")
 
                                                 // Actuator
                                                 .requestMatchers("/actuator/**").permitAll()
@@ -49,7 +49,9 @@ public class SecurityConfig {
 
                 JwtGrantedAuthoritiesConverter gac = new JwtGrantedAuthoritiesConverter();
                 gac.setAuthoritiesClaimName("cognito:groups");
-                gac.setAuthorityPrefix("ROLE_");
+
+                // Kein Präfix hinzufügen – Cognito liefert bereits ROLE_ADMIN
+                gac.setAuthorityPrefix("");
 
                 JwtAuthenticationConverter jac = new JwtAuthenticationConverter();
                 jac.setJwtGrantedAuthoritiesConverter(gac);
