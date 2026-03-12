@@ -171,7 +171,7 @@ resource "aws_eks_node_group" "this" {
   # Skalierungsregeln laut Vorgabe
   scaling_config {
   # Während aktiver Entwicklung läuft genau ein Worker Node
-  desired_size = 0
+  desired_size = 1
   min_size     = 0
   max_size     = 4
 }
