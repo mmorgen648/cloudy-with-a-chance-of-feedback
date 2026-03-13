@@ -135,19 +135,6 @@ terraform apply -var="eks_exists=true" \
   -target=module.cloudfront \
   -target=aws_route53_record.cloudfront_alias
 
-# ------------------------------------------------------------
-# Schritt 7: Leerer Git Commit als Pipeline Trigger
-# Kein echter Code ändert sich – der Commit dient nur dazu
-# die GitHub Actions Pipeline zu starten damit die Docker
-# Images gebaut und die Pods deployed werden.
-# ------------------------------------------------------------
 echo ""
-echo "🔄 Triggere Pipeline via Git Commit..."
-cd "$(dirname "$0")/.."
-echo "$(date -u +"%Y-%m-%d %H:%M:%S UTC")" > ../k8s/.deploy-trigger
-git add ../k8s/.deploy-trigger
-git commit -m "chore: trigger deploy nach Destroy/Apply"
-git push
-
-echo ""
-echo "✅ Fertig. Pipeline läuft – Pods werden deployed."
+echo "✅ Infrastruktur fertig. Pipeline manuell starten:"
+echo "   git commit --allow-empty -m 'deploy: nach Apply' && git push"
