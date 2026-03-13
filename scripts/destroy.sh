@@ -101,6 +101,7 @@ terraform destroy \
   -target=module.acm \
   -target=module.security_groups \
   -target=module.alb_controller \
+  -target=module.comprehend \
   -target=aws_acm_certificate.alb_cert \
   -target=aws_route53_record.alb_cert_validation \
   -target=aws_acm_certificate_validation.alb_cert_validation \

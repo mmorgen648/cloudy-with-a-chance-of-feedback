@@ -53,7 +53,8 @@ terraform apply -var="eks_exists=false" \
   -target=aws_iam_role_policy.github_actions_cloudfront_invalidation \
   -target=aws_iam_role_policy_attachment.github_actions_ecr_power_user \
   -target=aws_iam_role_policy_attachment.github_actions_eks_cluster_policy \
-  -target=aws_iam_role_policy_attachment.github_actions_eks_worker_node_policy
+  -target=aws_iam_role_policy_attachment.github_actions_eks_worker_node_policy \
+  -target=module.comprehend
 
 # ------------------------------------------------------------
 # Schritt 2: kubeconfig aktualisieren
@@ -75,6 +76,8 @@ echo ""
 echo "🔄 Erstelle aws-auth ConfigMap..."
 terraform apply -var="eks_exists=true" -var="alb_exists=false" \
   -target=kubernetes_config_map.aws_auth \
+  -target=kubernetes_service_account.alb_controller \
+  -target=kubernetes_service_account.backend \
   -auto-approve
 
 # ------------------------------------------------------------
@@ -141,7 +144,9 @@ terraform apply -var="eks_exists=true" \
 echo ""
 echo "🔄 Triggere Pipeline via Git Commit..."
 cd "$(dirname "$0")/.."
-git commit --allow-empty -m "chore: trigger deploy nach Destroy/Apply"
+echo "$(date -u +"%Y-%m-%d %H:%M:%S UTC")" > ../k8s/.deploy-trigger
+git add ../k8s/.deploy-trigger
+git commit -m "chore: trigger deploy nach Destroy/Apply"
 git push
 
 echo ""
