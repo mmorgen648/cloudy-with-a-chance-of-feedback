@@ -89,7 +89,9 @@ helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-contro
   -n kube-system \
   --set clusterName=cloudy-eks \
   --set serviceAccount.create=false \
-  --set serviceAccount.name=aws-load-balancer-controller
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set vpcId=vpc-05cf7ae7eaf3f2b7f \
+  --set region=eu-central-1
 
 # ------------------------------------------------------------
 # Schritt 5: Warten bis ALB existiert

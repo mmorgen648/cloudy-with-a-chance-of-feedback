@@ -1,4 +1,24 @@
 # ============================================================
+# Kubernetes Service Account für Backend (Comprehend IRSA)
+#
+# Der Backend Pod benötigt Zugriff auf AWS Comprehend
+# für die Sentiment-Analyse. Die IRSA Annotation verknüpft
+# den Service Account mit der IAM Role.
+# ============================================================
+resource "kubernetes_service_account" "backend" {
+  metadata {
+    name      = "backend-sa"
+    namespace = "default"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = "arn:aws:iam::038217523163:role/cloudy-eks-comprehend-role"
+    }
+  }
+  depends_on = [
+    module.eks
+  ]
+}
+
+# ============================================================
 # Kubernetes Service Account für AWS Load Balancer Controller
 #
 # Helm installiert den ALB Controller mit

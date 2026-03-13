@@ -23,6 +23,7 @@ spec:
         app: backend
 
     spec:
+      serviceAccountName: backend-sa
       containers:
         # Container Definition
         - name: backend
@@ -87,8 +88,3 @@ spec:
               port: 8080
             initialDelaySeconds: 90
             periodSeconds: 20
- 
- 
- 
- 
- 
