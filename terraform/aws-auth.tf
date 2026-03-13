@@ -10,7 +10,7 @@ resource "kubernetes_service_account" "backend" {
     name      = "backend-sa"
     namespace = "default"
     annotations = {
-      "eks.amazonaws.com/role-arn" = "arn:aws:iam::038217523163:role/cloudy-eks-comprehend-role"
+      "eks.amazonaws.com/role-arn" = module.comprehend.role_arn
     }
   }
   depends_on = [

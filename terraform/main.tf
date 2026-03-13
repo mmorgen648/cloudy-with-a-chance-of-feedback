@@ -180,6 +180,23 @@ module "alb_controller" {
 }
 
 # ------------------------------------------------------------
+# Comprehend Modul
+#
+# Erstellt die IAM Role für den Backend Pod damit er
+# AWS Comprehend für Sentiment-Analyse aufrufen darf.
+#
+# Die OIDC ID wird dynamisch aus dem EKS Modul bezogen –
+# damit funktioniert die Role nach jedem Destroy/Apply.
+# ------------------------------------------------------------
+module "comprehend" {
+  source = "./modules/comprehend"
+
+  cluster_name      = "cloudy-eks"
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
+}
+
+# ------------------------------------------------------------
 # RDS Modul
 # Erstellt PostgreSQL (db.t3.micro) in Private Subnets
 # REQUIREMENTS.md konform
