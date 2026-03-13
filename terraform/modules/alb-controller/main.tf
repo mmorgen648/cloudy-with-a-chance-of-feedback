@@ -77,3 +77,12 @@ resource "aws_iam_role_policy_attachment" "alb_controller" {
   role       = aws_iam_role.alb_controller.name
   policy_arn = var.policy_arn
 }
+
+# ------------------------------------------------------------
+# Output: IAM Role ARN
+# Wird von aws-auth.tf für den Service Account benötigt
+# ------------------------------------------------------------
+output "role_arn" {
+  description = "ARN der IAM Role für den ALB Controller"
+  value       = aws_iam_role.alb_controller.arn
+}

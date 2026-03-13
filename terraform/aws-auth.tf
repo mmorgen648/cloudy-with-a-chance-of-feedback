@@ -1,4 +1,27 @@
 # ============================================================
+# Kubernetes Service Account für AWS Load Balancer Controller
+#
+# Helm installiert den ALB Controller mit
+# serviceAccount.create=false – der Service Account muss
+# deshalb von Terraform erstellt werden.
+#
+# Die IRSA Annotation verknüpft den Service Account mit
+# der IAM Role damit der Controller AWS APIs aufrufen darf.
+# ============================================================
+resource "kubernetes_service_account" "alb_controller" {
+  metadata {
+    name      = "aws-load-balancer-controller"
+    namespace = "kube-system"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = module.alb_controller.role_arn
+    }
+  }
+  depends_on = [
+    module.eks
+  ]
+}
+
+# ============================================================
 # aws-auth ConfigMap für EKS
 #
 # Diese ConfigMap steuert, welche IAM Rollen Zugriff
