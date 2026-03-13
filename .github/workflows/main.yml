@@ -129,7 +129,16 @@ jobs:
       # -----------------------------------------------------
       - name: Deploy base manifests
         run: |
-          kubectl apply -f k8s/
+          # ACM Zertifikat ARN dynamisch aus AWS holen
+          ACM_CERT_ARN=$(aws acm list-certificates \
+            --region eu-central-1 \
+            --query 'CertificateSummaryList[?DomainName==`cloudy.cloudhelden-projekte.com`].CertificateArn' \
+            --output text)
+          # Ingress mit aktueller ARN deployen
+          sed "s|arn:aws:acm:eu-central-1:[0-9]*:certificate/[a-z0-9-]*|$ACM_CERT_ARN|g" \
+            k8s/ingress.yaml | kubectl apply -f -
+          # Restliche Manifeste deployen
+          kubectl apply -f k8s/ --selector='!kubernetes.io/ingress.class'
 
       # -----------------------------------------------------
       # Images im Deployment setzen
