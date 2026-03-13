@@ -1204,6 +1204,74 @@ Ergebnis:
 Status: In Bearbeitung
 
 ------------------------------------------------------------
+TAG 21 – Destroy/Apply Fixes (committed, nicht getestet)
+------------------------------------------------------------
+
+- variable "eks_exists" → steuert Kubernetes Provider
+- variable "alb_exists" → steuert ALB Data Source (getrennt von eks_exists)
+- null_resource.delete_ingress_before_destroy → entfernt aus modules/eks/main.tf
+- aws-auth ConfigMap → aus modules/eks herausgelöst → terraform/aws-auth.tf
+- kubernetes_service_account.alb_controller → in terraform/aws-auth.tf
+- kubernetes_service_account.backend (backend-sa) → in terraform/aws-auth.tf
+- module.comprehend → neues Modul terraform/modules/comprehend/main.tf
+- CloudFront Distribution ID → dynamisch in Pipeline
+- ACM Zertifikat ARN → dynamisch in Pipeline
+- IAM Policy github_actions_cloudfront_invalidation → erweitert
+- apply.sh → Helm mit --set vpcId + --set region
+- apply.sh → Pipeline Trigger entfernt → manuelle Anweisung am Ende
+- Paths Filter in Pipeline → entfernt
+- destroy.sh → module.comprehend in -target Flags ergänzt
+
+Status: Abgeschlossen (alle Fixes committed und gepusht)
+
+------------------------------------------------------------
+TAG 22 – Destroy/Apply Test durchgeführt
+------------------------------------------------------------
+
+Destroy:
+- destroy.sh erfolgreich durchgeführt (5. Versuch nach mehreren Fixes)
+- Fixes während Destroy:
+  - count = var.eks_exists ? 1 : 0 zu allen 3 Kubernetes-Ressourcen in aws-auth.tf
+  - -target Flags für Kubernetes-Ressourcen in destroy.sh ergänzt
+  - terraform state rm für Kubernetes-Ressourcen (einmalig, State war inkonsistent)
+  - SSO Token erneuert
+- 17 Ressourcen destroyed, Cognito erhalten
+- RDS Snapshot: nicht erforderlich (Daten aus Test)
+
+Apply:
+- apply.sh durchgeführt (mehrere manuelle Eingriffe erforderlich)
+- Fixes während Apply:
+  - -var="alb_exists=false" zu Phase 1 ergänzt
+  - terraform import für Route53 ACM Record
+  - terraform import für aws-auth ConfigMap
+  - Pipeline manuell getriggert (git commit --allow-empty)
+  - kubernetes.io/role/elb=1 Tags zu Public Subnets hinzugefügt
+  - ALB Controller mit neuer VPC ID neu installiert
+  - Subnet IDs explizit in k8s/ingress.yaml gesetzt
+  - ACM Zertifikat ARN in k8s/ingress.yaml aktualisiert
+  - Phase 2 manuell ausgeführt
+- App läuft vollständig ✅
+
+Teststatus nach Apply:
+- Feedback absenden ✅
+- Sentiment Analyse ✅
+- Admin Login ✅
+- Admin Dashboard ✅
+- Logout ✅
+
+Kostenstatus:
+- EKS: läuft (Nodes auf 0 skaliert)
+- RDS: gestoppt
+- CloudFront: aktiv
+- ALB: wird abgebaut (Nodes auf 0)
+
+Strukturelle Probleme dokumentiert:
+- personal logs/apply logs/ → vollständige Fehler + strukturelle Ursachen + dauerhafte Fixes
+- personal logs/destroy logs/ → vollständige Fehler + Fixes
+
+Status: Abgeschlossen
+
+------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
 Projekt:
@@ -1322,21 +1390,22 @@ Feedback System:
 Kostenstatus:
 
 Infrastruktur:
-- Komplett destroyed (2026-03-13, Destroy/Apply Test)
-- RDS Snapshot: cloudy-postgres-final-8bc91641 (behalten)
+- EKS läuft (Nodes auf 0 skaliert, 2026-03-13)
+- RDS gestoppt (2026-03-13)
+- CloudFront aktiv
+- ALB wird abgebaut (Nodes auf 0)
 - Cognito User Pool: erhalten (eu-central-1_EG8oTyz7B)
-- Apply folgt Tag 21 (nach TODO-Fixes)
 
 Aktive Kosten aktuell:
-- keine (Infrastruktur destroyed)
+- EKS Control Plane (~$0.10/h)
+- CloudFront (minimal)
 
 Projektphase:
-Woche 4 – Destroy/Apply Test + Dokumentation + Präsentationsvorbereitung
+Woche 4 – Destroy/Apply Test abgeschlossen + Dokumentation + Präsentationsvorbereitung
 
 Nächste Schritte:
-- TODO-Fixes umsetzen (null_resource, eks_exists Variable, destroy.sh)
-- terraform apply ausführen (scripts/apply.sh)
-- Destroy/Apply sauber testen
+- Strukturelle Fixes in scripts/apply.sh und scripts/destroy.sh umsetzen
+  (siehe personal logs/apply logs/ → STRUKTURELLE PROBLEME)
 - Dokumentation (README.md, ARCHITECTURE.md)
 - Präsentation vorbereiten
 
@@ -1344,21 +1413,27 @@ Nächste Schritte:
 OPEN TECH TASKS
 ------------------------------------------------------------
 
-Alle technischen Tasks abgeschlossen. ✔
-
-Erledigte Tasks (bis Tag 20):
+Erledigte Tasks (bis Tag 22):
 - Statistik Endpoint implementiert ✔
 - Admin Dashboard vollständig ✔
 - End-to-End Tests durchgeführt ✔
 - Cognito in Terraform importiert ✔
 - CI/CD Pipeline grün ✔
 - Security (keine Secrets im Repo) ✔
+- null_resource.delete_ingress_before_destroy entfernt ✔
+- Data Sources mit variable "eks_exists" abgesichert ✔
+- variable "alb_exists" eingeführt ✔
+- destroy.sh: ALB + Security Groups automatisch aufräumen ✔
+- Destroy/Apply Test durchgeführt ✔
+- Kubernetes-Tags für ALB Auto-Discovery in modules/vpc/main.tf ✔
 
-Offene Tasks (Tag 21):
-- null_resource.delete_ingress_before_destroy entfernen
-- Data Sources mit variable "eks_exists" absichern
-- destroy.sh: ALB + Security Groups automatisch aufräumen
-- terraform apply ausführen und testen
+Offene Tasks (strukturelle Fixes – vor nächstem Destroy/Apply):
+- Route53 ACM Record in destroy.sh -target Flags ergänzen
+- aws-auth ConfigMap Import in apply.sh automatisieren
+- apply.sh Ablauf neu sequenzieren (Pipeline vor Phase 2)
+- VPC ID in apply.sh dynamisch aus Terraform Output lesen
+- ACM Zertifikat ARN in Pipeline dynamisch setzen
+- Subnet Annotation in k8s/ingress.yaml entfernen (Auto-Discovery testen)
 
 ------------------------------------------------------------
 DOKU-MERKLISTE (für Woche 4)
@@ -1505,4 +1580,17 @@ DESTROY-LOG
 - Cognito: erhalten (durch destroy.sh ausgeschlossen)
 - Hinweis: Destroy lief in mehreren Schritten wegen hängendem
   null_resource + ALB/VPC Abhängigkeiten – siehe TODO Liste Tag 21
+----------------------------------------
+2026-03-13 (Tag 22 – Destroy/Apply Test)
+- Zerstörte Module: module.eks, module.rds, module.vpc, module.cloudfront,
+  module.acm, module.security_groups, module.alb_controller, module.comprehend,
+  aws_acm_certificate, aws_route53_record, aws_iam_role (GitHub Actions),
+  kubernetes_config_map.aws_auth, kubernetes_service_account.*
+- Grund: Destroy/Apply Test – Reproduzierbarkeit der Infrastruktur prüfen
+- RDS Snapshot: nicht erforderlich (keine produktiven Daten)
+- Cognito: erhalten (durch destroy.sh ausgeschlossen)
+- Hinweis: Destroy lief nach 5 Versuchen erfolgreich durch.
+  Fixes: count für Kubernetes-Ressourcen, -target Flags erweitert,
+  terraform state rm (einmalig wegen inkonsistentem State)
+- Apply: mehrere manuelle Eingriffe erforderlich – siehe personal logs/apply logs/
 ----------------------------------------

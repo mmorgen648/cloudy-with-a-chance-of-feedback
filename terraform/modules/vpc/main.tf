@@ -28,11 +28,12 @@ resource "aws_subnet" "public" {
   availability_zone       = "${var.region}${count.index == 0 ? "a" : "b"}"
 
   tags = {
-    Name    = "cloudy-public-subnet-${count.index}"
-    Project = "CloudyWithAChanceOfFeedback"
+    Name                                        = "cloudy-public-subnet-${count.index}"
+    Project                                     = "CloudyWithAChanceOfFeedback"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/cloudy-eks"          = "shared"
   }
 }
-
 # ------------------------------------------------------------
 # Private Subnets (für EKS Nodes / RDS)
 # ------------------------------------------------------------

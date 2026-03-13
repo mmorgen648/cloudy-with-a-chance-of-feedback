@@ -39,7 +39,7 @@ cd "$(dirname "$0")/../terraform"
 # existiert und die Data Sources sonst fehlschlagen.
 # ------------------------------------------------------------
 echo "🟢 Phase 1: Infrastruktur aufbauen (ohne CloudFront)..."
-terraform apply -var="eks_exists=false" \
+terraform apply -var="eks_exists=false" -var="alb_exists=false" \
   -target=module.vpc \
   -target=module.security_groups \
   -target=module.eks \

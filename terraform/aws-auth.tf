@@ -6,6 +6,9 @@
 # den Service Account mit der IAM Role.
 # ============================================================
 resource "kubernetes_service_account" "backend" {
+  # count = 0 wenn eks_exists=false (Destroy) →
+  # Terraform berührt diese Ressource nicht
+  count = var.eks_exists ? 1 : 0
   metadata {
     name      = "backend-sa"
     namespace = "default"
@@ -29,6 +32,9 @@ resource "kubernetes_service_account" "backend" {
 # der IAM Role damit der Controller AWS APIs aufrufen darf.
 # ============================================================
 resource "kubernetes_service_account" "alb_controller" {
+  # count = 0 wenn eks_exists=false (Destroy) →
+  # Terraform berührt diese Ressource nicht
+  count = var.eks_exists ? 1 : 0
   metadata {
     name      = "aws-load-balancer-controller"
     namespace = "kube-system"
@@ -57,6 +63,9 @@ resource "kubernetes_service_account" "alb_controller" {
 # aufgebaut und die kubeconfig aktualisiert wurde.
 # ============================================================
 resource "kubernetes_config_map" "aws_auth" {
+  # count = 0 wenn eks_exists=false (Destroy) →
+  # Terraform berührt diese Ressource nicht
+  count = var.eks_exists ? 1 : 0
   metadata {
     name      = "aws-auth"
     namespace = "kube-system"
