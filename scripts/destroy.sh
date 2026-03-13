@@ -93,6 +93,7 @@ fi
 echo "🔴 Starte Terraform Destroy (ohne Cognito)..."
 terraform destroy \
   -var="eks_exists=false" \
+  -var="alb_exists=false" \
   -target=module.eks \
   -target=module.rds \
   -target=module.vpc \

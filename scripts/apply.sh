@@ -73,7 +73,7 @@ aws eks update-kubeconfig --name cloudy-eks --region eu-central-1
 # ------------------------------------------------------------
 echo ""
 echo "🔄 Erstelle aws-auth ConfigMap..."
-terraform apply -var="eks_exists=true" \
+terraform apply -var="eks_exists=true" -var="alb_exists=false" \
   -target=kubernetes_config_map.aws_auth \
   -auto-approve
 

@@ -26,7 +26,19 @@ variable "db_password" {
 # - ./scripts/destroy.sh    → eks_exists = false (automatisch gesetzt)
 # ------------------------------------------------------------
 variable "eks_exists" {
-  description = "Ob EKS Cluster und ALB bereits existieren"
+  description = "Ob EKS Cluster bereits existiert"
+  type        = bool
+  default     = true
+}
+
+# ------------------------------------------------------------
+# Variable: alb_exists
+# Steuert ob der ALB Data Source aktiv ist.
+# Wird separat von eks_exists gesetzt weil der ALB
+# erst nach dem ALB Controller + Ingress existiert.
+# ------------------------------------------------------------
+variable "alb_exists" {
+  description = "Ob ALB bereits existiert (nach Ingress + ALB Controller)"
   type        = bool
   default     = true
 }
@@ -302,7 +314,7 @@ resource "aws_acm_certificate_validation" "alb_cert_validation" {
 # count = 0 → wenn EKS/ALB nicht existiert (Destroy)
 # ------------------------------------------------------------
 data "aws_lb" "eks_ingress" {
-  count = var.eks_exists ? 1 : 0
+  count = var.alb_exists ? 1 : 0
   tags = {
     "elbv2.k8s.aws/cluster" = "cloudy-eks"
   }
@@ -323,7 +335,7 @@ module "cloudfront" {
 
   # ALB DNS Name – automatisch aus AWS gelesen wenn EKS existiert
   # Platzhalter wird gesetzt wenn eks_exists = false (Destroy)
-  alb_dns_name = var.eks_exists ? data.aws_lb.eks_ingress[0].dns_name : "placeholder.example.com"
+  alb_dns_name = var.alb_exists ? data.aws_lb.eks_ingress[0].dns_name : "placeholder.example.com"
 }
 
 # ------------------------------------------------------------
