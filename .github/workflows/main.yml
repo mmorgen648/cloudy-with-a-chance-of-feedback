@@ -34,8 +34,6 @@ env:
   ECR_BACKEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-backend
   ECR_FRONTEND: 038217523163.dkr.ecr.eu-central-1.amazonaws.com/cloudy-feedback-frontend
 
-  CLOUDFRONT_DISTRIBUTION: EEFDFZ6ZWF6FL
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -159,6 +157,9 @@ jobs:
       # -----------------------------------------------------
       - name: Invalidate CloudFront cache
         run: |
+          CLOUDFRONT_DISTRIBUTION=$(aws cloudfront list-distributions \
+            --query 'DistributionList.Items[?contains(Origins.Items[0].DomainName, `elb.amazonaws.com`)].Id' \
+            --output text)
           aws cloudfront create-invalidation \
-          --distribution-id $CLOUDFRONT_DISTRIBUTION \
-          --paths "/*"
+            --distribution-id $CLOUDFRONT_DISTRIBUTION \
+            --paths "/*"
