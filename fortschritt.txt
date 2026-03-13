@@ -123,7 +123,7 @@ Ergebnis:
 Status: Abgeschlossen
 
 ------------------------------------------------------------
-TAG 5 – Terraform Network Layer
+TAG 5 – Terraform Network Layer + Cognito OAuth + JWT Validation
 ------------------------------------------------------------
 
 - Network Modul erstellt:
@@ -157,18 +157,6 @@ TAG 5 – Terraform Network Layer
 - KEIN NAT Gateway verwendet (Projektregel v2)
 - Remote State korrekt genutzt (network/terraform.tfstate)
 - Terraform apply erfolgreich ausgeführt
-- Commit + Push durchgeführt
-
-Ergebnis:
-- Netzwerkbasis für EKS und RDS steht
-- Multi-AZ vorbereitet
-- Infrastruktur Enterprise-konform modularisiert
-
-Status: Abgeschlossen
-
-------------------------------------------------------------
-TAG 5 – Cognito OAuth + JWT Validation (Teil 2)
-------------------------------------------------------------
 
 - AWS Cognito User Pool final konfiguriert
 - Authorization Code Flow per Browser validiert
@@ -185,13 +173,15 @@ TAG 5 – Cognito OAuth + JWT Validation (Teil 2)
 - JWT Decode-Regel im Master-Prompt ergänzt
 
 Ergebnis:
+- Netzwerkbasis für EKS und RDS steht
+- Multi-AZ vorbereitet
+- Infrastruktur Enterprise-konform modularisiert
 - OAuth Flow vollständig funktionsfähig
 - JWT Signaturprüfung korrekt
 - Rollenprüfung produktionsreif umgesetzt
 - Woche 1 Security-Ziel vollständig erreicht
 
 Status: Abgeschlossen
-
 
 ------------------------------------------------------------
 TAG 6 – Dockerisierung + ECR Integration
@@ -1216,7 +1206,6 @@ Status: In Bearbeitung
 ------------------------------------------------------------
 AKTUELLER PROJEKTSTATUS
 ------------------------------------------------------------
-
 Projekt:
 CloudyWithAChanceOfFeedback
 
@@ -1226,8 +1215,6 @@ us-east-1 (ACM für CloudFront)
 
 Architektur:
 Cloud-native Anwendung auf AWS mit Kubernetes (EKS)
-
-Systemstatus der Anwendung:
 
 Produktionsdomain:
 https://cloudy.cloudhelden-projekte.com
@@ -1252,6 +1239,7 @@ Infrastruktur (Terraform):
 - Route 53 Domain: cloudy.cloudhelden-projekte.com
 - Remote Terraform State in S3
 - State Locking über DynamoDB
+- Cognito vollständig in Terraform verwaltet
 
 Kubernetes (EKS):
 - Frontend Deployment (Nginx)
@@ -1286,15 +1274,16 @@ Authentifizierung:
 Frontend:
 - Öffentliche Startseite mit Feedback Formular
 - Admin Login Seite
-- Admin Dashboard
+- Admin Dashboard vollständig funktionsfähig
 - Logout Funktion über Cognito
 - Dynamische Navigation (Login / Admin / Logout)
 - Redirect funktioniert lokal und über CloudFront Domain
 
 Backend:
 - Spring Boot REST API
-- Endpoint zum Einreichen von Feedback
-- Endpoint zum Abrufen von Feedback
+- Endpoint zum Einreichen von Feedback (POST /api/feedback)
+- Endpoint zum Abrufen von Feedback (GET /api/feedback)
+- Statistik Endpoint (GET /api/feedback/stats)
 - Integration mit Amazon Comprehend
   - Sentiment Analyse
   - Key Phrase Extraktion
@@ -1314,168 +1303,62 @@ CloudFront:
 Aktueller Teststatus:
 
 Login / Auth:
-- Cognito Login funktioniert
-- Logout funktioniert
-- Redirect funktioniert lokal und über CloudFront
+- Cognito Login funktioniert ✔
+- Logout funktioniert ✔
+- Redirect funktioniert lokal und über CloudFront ✔
 
 Frontend:
-- Startseite lädt korrekt
-- Navigation funktioniert
-- Admin Dashboard erreichbar
+- Startseite lädt korrekt ✔
+- Navigation funktioniert ✔
+- Admin Dashboard vollständig funktionsfähig ✔
 
 Feedback System:
-- Formular sendet Requests an Backend
-- Feedback Speicherung funktioniert
-- Amazon Comprehend Analyse wird durchgeführt
-- Ergebnisse werden im Feedback Datensatz gespeichert
-- Statistik Endpoint wird aktuell noch implementiert / getestet
+- Formular sendet Requests an Backend ✔
+- Feedback Speicherung funktioniert ✔
+- Amazon Comprehend Analyse wird durchgeführt ✔
+- Ergebnisse werden im Feedback Datensatz gespeichert ✔
+- Statistik Endpoint implementiert und getestet ✔
 
 Kostenstatus:
 
-RDS:
-- Instanz gestoppt
-
-EKS:
-- Node Group auf desired_size = 0 skaliert (Terraform)
+Infrastruktur:
+- Komplett destroyed (2026-03-13, Destroy/Apply Test)
+- RDS Snapshot: cloudy-postgres-final-8bc91641 (behalten)
+- Cognito User Pool: erhalten (eu-central-1_EG8oTyz7B)
+- Apply folgt Tag 21 (nach TODO-Fixes)
 
 Aktive Kosten aktuell:
-- nur EKS Control Plane (~$0.10/h)
+- keine (Infrastruktur destroyed)
 
 Projektphase:
-Woche 4 – Systemtests, Debugging und Vorbereitung der Präsentation
+Woche 4 – Destroy/Apply Test + Dokumentation + Präsentationsvorbereitung
 
 Nächste Schritte:
-- Backend Datenbank Schema prüfen
-- Feedback Speicherung testen
-- Statistik Endpoint implementieren / testen
-- Admin Dashboard vollständig testen
-- Vollständige Systemtests durchführen
-- Demo Daten vorbereiten
+- TODO-Fixes umsetzen (null_resource, eks_exists Variable, destroy.sh)
+- terraform apply ausführen (scripts/apply.sh)
+- Destroy/Apply sauber testen
+- Dokumentation (README.md, ARCHITECTURE.md)
+- Präsentation vorbereiten
 
 ------------------------------------------------------------
 OPEN TECH TASKS
 ------------------------------------------------------------
 
-Backend
+Alle technischen Tasks abgeschlossen. ✔
 
-- Statistik Endpoint implementieren
-  GET /api/feedback/stats
+Erledigte Tasks (bis Tag 20):
+- Statistik Endpoint implementiert ✔
+- Admin Dashboard vollständig ✔
+- End-to-End Tests durchgeführt ✔
+- Cognito in Terraform importiert ✔
+- CI/CD Pipeline grün ✔
+- Security (keine Secrets im Repo) ✔
 
-  Funktion:
-  Statistik der letzten 7 Tage
-
-  Erwartete Rückgabe:
-  - positive
-  - negative
-  - neutral
-  - mixed
-
-- Statistik Query im Repository implementieren
-  Aggregation der Sentiment-Werte der letzten 7 Tage
-
-- Service Logik für Statistik implementieren
-  Verarbeitung der Query-Ergebnisse
-  Rückgabe als Map<String, Integer>
-
-
-Frontend
-
-- Admin Dashboard Statistik integrieren
-  GET /api/feedback/stats vom Backend abrufen
-
-- Statistik Anzeige im Dashboard implementieren
-  positive / negative / neutral / mixed darstellen
-
-- Aktualisieren Button im Admin Dashboard testen
-  muss neue Statistikdaten vom Backend laden
-
-- Feedback Liste im Admin Dashboard vollständig testen
-  prüfen ob gespeicherte Feedback Einträge korrekt angezeigt werden
-
-
-Systemtests
-
-- End-to-End Test durchführen
-
-  Browser
-  → CloudFront
-  → ALB
-  → Backend (EKS)
-  → Amazon Comprehend
-  → RDS PostgreSQL
-
-- API Tests mit curl durchführen
-
-  POST /api/feedback
-  GET /api/feedback
-  GET /api/feedback/stats
-
-- Authentifizierung testen
-
-  Admin Dashboard nur mit gültigem Cognito Token erreichbar
-  Zugriff ohne Token muss blockiert werden
-
-
-Infrastructure
-
-- Cognito Infrastruktur vollständig in Terraform überführen
-
-  Ziel:
-  Alle Authentifizierungsressourcen über IaC verwalten
-
-  Terraform Modul erstellen:
-
-  terraform/modules/cognito/
-
-  Ressourcen:
-
-  - aws_cognito_user_pool
-  - aws_cognito_user_pool_client
-  - aws_cognito_user_pool_domain
-  - aws_cognito_user_group (ADMIN)
-
-  Nach Migration:
-
-  terraform destroy → terraform apply
-
-  muss komplette Infrastruktur reproduzierbar erstellen.
-
-
-CI/CD
-
-- Pipeline Run nach Änderungen prüfen
-  Test → Build → ECR Push → Deploy → Rollout
-
-- Kubernetes Deployment prüfen
-  sicherstellen dass neue Images mit Commit SHA laufen
-
-- Pod Status prüfen
-
-  kubectl get pods
-
-- Image Version prüfen
-
-  kubectl describe deployment frontend
-  kubectl describe deployment backend
-
-
-Security
-
-- Sicherstellen dass keine Secrets im Repository liegen
-
-- Kubernetes Secret aus Repository entfernt
-  (k8s/secret.yaml gelöscht)
-
-- Credentials über GitHub Secrets verwalten
-  und in der CI/CD Pipeline verwenden
-
-
-Präsentationsvorbereitung
-
-- vollständige Systemtests durchführen
-- Demo Daten erstellen (10–15 Feedback Beispiele)
-- Admin Dashboard mit realistischen Daten testen
-- Präsentations-Demo vorbereiten
+Offene Tasks (Tag 21):
+- null_resource.delete_ingress_before_destroy entfernen
+- Data Sources mit variable "eks_exists" absichern
+- destroy.sh: ALB + Security Groups automatisch aufräumen
+- terraform apply ausführen und testen
 
 ------------------------------------------------------------
 DOKU-MERKLISTE (für Woche 4)

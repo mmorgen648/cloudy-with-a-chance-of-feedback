@@ -17,6 +17,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "k8s/**"
+      - ".github/workflows/**"
 
 permissions:
   id-token: write

@@ -14,6 +14,24 @@ variable "db_password" {
 }
 
 # ------------------------------------------------------------
+# Root Variable: EKS Exists
+#
+# Steuert ob EKS und ALB bereits existieren.
+# Wird beim Destroy auf false gesetzt damit Terraform
+# die Data Sources nicht auswertet die EKS und ALB
+# voraussetzen.
+#
+# Verwendung:
+# - terraform apply         → eks_exists = true (default)
+# - ./scripts/destroy.sh    → eks_exists = false (automatisch gesetzt)
+# ------------------------------------------------------------
+variable "eks_exists" {
+  description = "Ob EKS Cluster und ALB bereits existieren"
+  type        = bool
+  default     = true
+}
+
+# ------------------------------------------------------------
 # Root Variable: Public Domain
 #
 # Domain für die öffentliche Anwendung.
@@ -270,7 +288,7 @@ resource "aws_acm_certificate_validation" "alb_cert_validation" {
 }
 
 # ------------------------------------------------------------
-# ALB automatisch finden
+# ALB Data Source
 #
 # Der ALB wird nicht direkt von Terraform erstellt,
 # sondern vom Kubernetes Ingress über den
@@ -279,14 +297,16 @@ resource "aws_acm_certificate_validation" "alb_cert_validation" {
 # Diese Data Source liest den aktuell existierenden
 # ALB aus AWS, damit wir seinen DNS Namen automatisch
 # verwenden können.
+#
+# count = 1 → wenn EKS/ALB existiert (normaler Apply)
+# count = 0 → wenn EKS/ALB nicht existiert (Destroy)
 # ------------------------------------------------------------
-/* data "aws_lb" "eks_ingress" {      <------------------------------
-
+data "aws_lb" "eks_ingress" {
+  count = var.eks_exists ? 1 : 0
   tags = {
     "elbv2.k8s.aws/cluster" = "cloudy-eks"
   }
-} */
-
+}
 # ------------------------------------------------------------
 # CloudFront Modul
 #
@@ -301,9 +321,9 @@ module "cloudfront" {
   # ACM Zertifikat aus dem ACM Modul
   acm_certificate_arn = module.acm.aws_acm_certificate_arn
 
-  # ALB DNS temporär auskommentiert während Destroy <----------------
-  # alb_dns_name = data.aws_lb.eks_ingress.dns_name
-  alb_dns_name = "placeholder.example.com"
+  # ALB DNS Name – automatisch aus AWS gelesen wenn EKS existiert
+  # Platzhalter wird gesetzt wenn eks_exists = false (Destroy)
+  alb_dns_name = var.eks_exists ? data.aws_lb.eks_ingress[0].dns_name : "placeholder.example.com"
 }
 
 # ------------------------------------------------------------

@@ -31,7 +31,7 @@ cd "$(dirname "$0")/../terraform"
 # Cognito bleibt erhalten – wird nicht neu erstellt.
 # ------------------------------------------------------------
 echo "🟢 Starte Terraform Apply..."
-terraform apply
+terraform apply -var="eks_exists=true"
 
 # ------------------------------------------------------------
 # Schritt 2: kubeconfig aktualisieren

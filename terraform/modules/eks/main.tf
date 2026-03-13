@@ -186,30 +186,3 @@ resource "aws_eks_node_group" "this" {
     aws_iam_role_policy_attachment.node_cni_policy
   ]
 }
-
-# ============================================================
-# Ingress automatisch löschen vor EKS Destroy
-#
-# Der ALB wird vom Kubernetes Ingress Controller erstellt –
-# nicht von Terraform. Damit Terraform die VPC sauber löschen
-# kann, muss der ALB vorher aufgeräumt werden.
-#
-# Dieser null_resource führt beim terraform destroy automatisch
-# kubectl delete ingress --all aus, bevor EKS gelöscht wird.
-# Dadurch räumt der Ingress Controller den ALB selbst auf.
-# ============================================================
-resource "null_resource" "delete_ingress_before_destroy" {
-
-  triggers = {
-    cluster_name = aws_eks_cluster.this.name
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = "kubectl delete ingress --all --ignore-not-found=true && sleep 30"
-  }
-
-  depends_on = [
-    aws_eks_node_group.this
-  ]
-}

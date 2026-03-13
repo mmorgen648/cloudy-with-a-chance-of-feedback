@@ -59,15 +59,19 @@ provider "aws" {
 #
 # Diese Datenquellen erlauben Terraform,
 # mit dem Kubernetes API Server zu sprechen.
+#
+# count = 1 → wenn EKS existiert (normaler Apply)
+# count = 0 → wenn EKS nicht existiert (Destroy)
 # ============================================================
-
-/* data "aws_eks_cluster" "eks" {           <------------------------
-  name = "cloudy-eks"
+data "aws_eks_cluster" "eks" {
+  count = var.eks_exists ? 1 : 0
+  name  = "cloudy-eks"
 }
 
 data "aws_eks_cluster_auth" "eks" {
-  name = "cloudy-eks"
-} */
+  count = var.eks_exists ? 1 : 0
+  name  = "cloudy-eks"
+}
 
 # ============================================================
 # Kubernetes Provider
@@ -75,18 +79,15 @@ data "aws_eks_cluster_auth" "eks" {
 # Dieser Provider verbindet Terraform mit dem
 # Kubernetes API Server des EKS Clusters.
 #
-# Dadurch kann Terraform Ressourcen wie
-# ConfigMaps oder Secrets direkt im Cluster
-# erstellen.
+# Wenn eks_exists = false (Destroy):
+# - leere Werte werden gesetzt
+# - Terraform kommuniziert nicht mit Kubernetes
+# - kubernetes_config_map wird beim Destroy nicht berührt
 # ============================================================
-
-/* provider "kubernetes" {              <----------------------------
-
-  host = data.aws_eks_cluster.eks.endpoint
-
-  cluster_ca_certificate = base64decode(
-    data.aws_eks_cluster.eks.certificate_authority[0].data
-  )
-
-  token = data.aws_eks_cluster_auth.eks.token
-} */
+provider "kubernetes" {
+  host = var.eks_exists ? data.aws_eks_cluster.eks[0].endpoint : ""
+  cluster_ca_certificate = var.eks_exists ? base64decode(
+    data.aws_eks_cluster.eks[0].certificate_authority[0].data
+  ) : ""
+  token = var.eks_exists ? data.aws_eks_cluster_auth.eks[0].token : ""
+}
