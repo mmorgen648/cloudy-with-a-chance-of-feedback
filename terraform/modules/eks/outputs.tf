@@ -69,3 +69,12 @@ output "oidc_provider_url" {
   description = "OIDC provider URL used for IRSA trust policies"
   value       = aws_iam_openid_connect_provider.eks.url
 }
+# ------------------------------------------------------------
+# IAM Rolle der Worker Nodes
+# Wird von der aws-auth ConfigMap benötigt damit
+# die Nodes dem Cluster beitreten können.
+# ------------------------------------------------------------
+output "node_role_arn" {
+  description = "IAM role ARN used by the EKS worker nodes"
+  value       = aws_iam_role.eks_node_role.arn
+}

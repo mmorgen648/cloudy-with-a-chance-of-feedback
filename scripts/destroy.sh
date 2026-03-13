@@ -109,6 +109,5 @@ terraform destroy \
   -target=aws_iam_role_policy_attachment.github_actions_ecr_power_user \
   -target=aws_iam_role_policy_attachment.github_actions_eks_cluster_policy \
   -target=aws_iam_role_policy_attachment.github_actions_eks_worker_node_policy \
-  -target=null_resource.kubernetes_bootstrap
 
 echo "✅ Destroy abgeschlossen. Cognito bleibt erhalten."

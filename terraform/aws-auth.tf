@@ -7,10 +7,13 @@
 # REQUIREMENTS:
 # Keine manuellen kubectl Schritte
 # → alles wird über Terraform erzeugt.
+#
+# Diese Ressource liegt bewusst im Root-Modul und nicht
+# in modules/eks – weil sie den Kubernetes Provider
+# benötigt der erst verfügbar ist nachdem EKS vollständig
+# aufgebaut und die kubeconfig aktualisiert wurde.
 # ============================================================
-
 resource "kubernetes_config_map" "aws_auth" {
-
   metadata {
     name      = "aws-auth"
     namespace = "kube-system"
@@ -18,7 +21,7 @@ resource "kubernetes_config_map" "aws_auth" {
 
   data = {
     mapRoles = <<EOF
-- rolearn: arn:aws:iam::038217523163:role/cloudy-eks-node-role
+- rolearn: ${module.eks.node_role_arn}
   username: system:node:{{EC2PrivateDNSName}}
   groups:
     - system:bootstrappers
@@ -31,10 +34,7 @@ resource "kubernetes_config_map" "aws_auth" {
 EOF
   }
 
-  # Wichtig:
-  # Terraform darf aws-auth erst erstellen,
-  # nachdem der EKS Cluster existiert.
   depends_on = [
-    aws_eks_cluster.this
+    module.eks
   ]
 }
