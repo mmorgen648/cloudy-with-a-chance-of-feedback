@@ -96,6 +96,11 @@ resource "aws_iam_role_policy" "github_actions_cloudfront_invalidation" {
           "cloudfront:CreateInvalidation"
         ]
         Resource = "arn:aws:cloudfront::038217523163:distribution/${module.cloudfront.distribution_id}"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["cloudfront:ListDistributions"]
+        Resource = "*"
       }
     ]
   })
